@@ -126,3 +126,25 @@ class SI_graph:
             for i in range(len(satisfied)):
                 if satisfied[i]:
                     self.network.AddIntAttrDatN(node_id, 1, self.contagions[i])
+
+    def simulate(self, time_steps):
+        for i in range(time_steps):
+            self.apply_updates()
+
+    def get_state_vector(self):
+        node_iter = self.network.Nodes
+        state_vector = np.zeros(shape=(len(node_iter), len(self.contagions)), dtype=np.bool)
+        i = 0
+        for node in node_iter:
+            node_id = node.GetId()
+            for j in range(len(self.contagions)):
+                state_vector[i][j] = np.bool(self.network.GetIntAttrDatN(node_id, self.contagions[j]))
+        return state_vector
+
+    def get_state_distrubtion(self):
+        state_vector = self.get_state_vector()
+        contagions = np.zeros(shape=(len(self.contagions),), dtype=np.uint)
+        for i in range(state_vector.shape[0]):
+            for j in range(state_vector.shape[1]):
+                self.contagions[j] += state_vector[i][j]
+
