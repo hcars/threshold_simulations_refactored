@@ -59,10 +59,10 @@ class multiple_contagions(DiffusionModel):
             delta, node_count, status_delta = self.status_delta(actual_status)
             if node_status:
                 return {"iteration": 0, "status": actual_status.copy(),
-                        "node_count": node_count.copy(), "status_delta": status_delta.copy()}
+                        "node_count": node_count.copy(), "status_delta": status_delta.copy(), "fixed_point": False}
             else:
                 return {"iteration": 0, "status": {},
-                        "node_count": node_count.copy(), "status_delta": status_delta.copy()}
+                        "node_count": node_count.copy(), "status_delta": status_delta.copy(), "fixed_point": False}
 
         # iteration inner loop
         for u in self.graph.nodes():
@@ -71,20 +71,22 @@ class multiple_contagions(DiffusionModel):
             if u_status == 3:
                 continue
             else:
+                # Retrieve the thresholds for both contagions.
                 threshold_1 = self.params['nodes']["threshold_1"][u]
                 threshold_2 = self.params['nodes']["threshold_2"][u]
                 if u_status == 0:
-                    cnt_Infected = 0
+                    # Counts the infected status of neighbors and updates appropriately.
+                    cnt_infected = 0
                     cnt_infected_2 = 0
                     for v in self.graph.neighbors(u):
                         if self.status[v] == 1:
-                            cnt_Infected += 1
+                            cnt_infected += 1
                         elif self.status[v] == 2:
                             cnt_infected_2 += 1
                         elif self.status[v] == 3:
-                            cnt_Infected += 1
+                            cnt_infected += 1
                             cnt_infected_2 += 1
-                    satisfied_1 = threshold_1 <= cnt_Infected
+                    satisfied_1 = threshold_1 <= cnt_infected
                     satisfied_2 = threshold_2 <= cnt_infected_2
                     if satisfied_1 and satisfied_2:
                         actual_status[u] = 3
@@ -93,6 +95,8 @@ class multiple_contagions(DiffusionModel):
                     elif satisfied_2:
                         actual_status[u] = 2
                 elif u_status == 1:
+                    # Counts the infected status of neighbors, updates the threshold based on the interaction, and
+                    # updates node state appropriately.
                     threshold_2 += threshold_2 * self.params['model']["interaction_1"]
                     cnt_infected_2 = 0
                     for v in self.graph.neighbors(u):
@@ -103,14 +107,16 @@ class multiple_contagions(DiffusionModel):
                     if threshold_2 <= cnt_infected_2:
                         actual_status[u] = 3
                 elif u_status == 2:
+                    # Counts the infected status of neighbors, updates the threshold based on the interaction, and
+                    # updates node state appropriately.
                     threshold_1 += threshold_1 * self.params['model']["interaction_2"]
-                    cnt_Infected = 0
+                    cnt_infected = 0
                     for v in self.graph.neighbors(u):
                         if self.status[v] == 1:
-                            cnt_Infected += 1
+                            cnt_infected += 1
                         elif self.status[v] == 3:
-                            cnt_Infected += 1
-                    if threshold_1 <= cnt_Infected:
+                            cnt_infected += 1
+                    if threshold_1 <= cnt_infected:
                         actual_status[u] = 3
 
         # identify the changes w.r.t. previous iteration
@@ -119,11 +125,12 @@ class multiple_contagions(DiffusionModel):
         # update the actual status and iterative step
         self.status = actual_status
         self.actual_iteration += 1
-
+        fixed_point = delta == {}
         # return the actual configuration (only nodes with status updates)
+        # Returns a boolean to determine if the simulation has reached a fixed point.
         if node_status:
             return {"iteration": self.actual_iteration - 1, "status": delta.copy(),
-                    "node_count": node_count.copy(), "status_delta": status_delta.copy()}
+                    "node_count": node_count.copy(), "status_delta": status_delta.copy(), "fixed_point": fixed_point}
         else:
             return {"iteration": self.actual_iteration - 1, "status": {},
-                    "node_count": node_count.copy(), "status_delta": status_delta.copy()}
+                    "node_count": node_count.copy(), "status_delta": status_delta.copy(), "fixed_point": fixed_point}

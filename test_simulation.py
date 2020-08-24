@@ -24,15 +24,19 @@ config.add_model_initial_configuration('Infected_2', seed_set_2)
 
 model.set_initial_status(config)
 
-
-# Simulation
-iterations = model.iteration_bunch(100)
-trends = model.build_trends(iterations)
-
-
-from bokeh.io import output_notebook, show
-from ndlib.viz.bokeh.DiffusionTrend import DiffusionTrend
-
-viz = DiffusionTrend(model, trends)
-p = viz.plot(width=1000, height=800)
-show(p)
+fixed_point = False
+while not fixed_point:
+    iteration_results = model.iteration(node_status=True)
+    print(iteration_results['status'])
+    fixed_point = iteration_results['fixed_point']
+# # Simulation
+# iterations = model.iteration_bunch(100)
+# trends = model.build_trends(iterations)
+#
+#
+# from bokeh.io import output_notebook, show
+# from ndlib.viz.bokeh.DiffusionTrend import DiffusionTrend
+#
+# viz = DiffusionTrend(model, trends)
+# p = viz.plot(width=1000, height=800)
+# show(p)
