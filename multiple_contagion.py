@@ -97,7 +97,7 @@ class multiple_contagions(DiffusionModel):
                 elif u_status == 1:
                     # Counts the infected status of neighbors, updates the threshold based on the interaction, and
                     # updates node state appropriately.
-                    threshold_2 += threshold_2 * self.params['model']["interaction_1"]
+                    threshold_2 += int(threshold_2 * self.params['model']["interaction_1"])
                     cnt_infected_2 = 0
                     for v in self.graph.neighbors(u):
                         if self.status[v] == 2:
@@ -109,7 +109,7 @@ class multiple_contagions(DiffusionModel):
                 elif u_status == 2:
                     # Counts the infected status of neighbors, updates the threshold based on the interaction, and
                     # updates node state appropriately.
-                    threshold_1 += threshold_1 * self.params['model']["interaction_2"]
+                    threshold_1 += int(threshold_1 * self.params['model']["interaction_2"])
                     cnt_infected = 0
                     for v in self.graph.neighbors(u):
                         if self.status[v] == 1:
