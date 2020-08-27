@@ -4,7 +4,6 @@ from multiple_contagion import multiple_contagions
 
 # Network Definition
 G = nx.barabasi_albert_graph(1000, 25)
-print(len(list(G.edges)))
 model = multiple_contagions(G)
 
 import ndlib.models.ModelConfig as mc
@@ -25,18 +24,9 @@ config.add_model_initial_configuration('Infected_2', seed_set_2)
 model.set_initial_status(config)
 
 fixed_point = False
+model.iteration()
 while not fixed_point:
-    iteration_results = model.iteration(node_status=True)
-    print(iteration_results['status'])
-    fixed_point = iteration_results['fixed_point']
-# # Simulation
-# iterations = model.iteration_bunch(100)
-# trends = model.build_trends(iterations)
-#
-#
-# from bokeh.io import output_notebook, show
-# from ndlib.viz.bokeh.DiffusionTrend import DiffusionTrend
-#
-# viz = DiffusionTrend(model, trends)
-# p = viz.plot(width=1000, height=800)
-# show(p)
+    iteration_results = model.iteration(node_status=True, first_infected=True)
+    print(iteration_results['first_infected_1'] == iteration_results['first_infected_2'] == set())
+    fixed_point = iteration_results['first_infected_1'] == iteration_results['first_infected_2'] == set()
+    print(iteration_results)

@@ -33,7 +33,7 @@ def simulation_run(model):
     updated_node_list = []
     while not fixed_point:
         results = model.iteration(node_status=True)
-        fixed_point = results['fixed_point']
+        fixed_point = results['status'] == set()
         updated_node_list.append(results['status'])
     return updated_node_list[:-1]
 
