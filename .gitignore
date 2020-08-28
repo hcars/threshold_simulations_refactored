@@ -5,6 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
+# Directory with network data
+complex_net_proposal/experiment_networks
 
 # Distribution / packaging
 .Python

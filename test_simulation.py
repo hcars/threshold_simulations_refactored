@@ -27,6 +27,4 @@ fixed_point = False
 model.iteration()
 while not fixed_point:
     iteration_results = model.iteration(node_status=True, first_infected=True)
-    print(iteration_results['first_infected_1'] == iteration_results['first_infected_2'] == set())
     fixed_point = iteration_results['first_infected_1'] == iteration_results['first_infected_2'] == set()
-    print(iteration_results)
