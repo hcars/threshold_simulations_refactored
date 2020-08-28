@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def greedy_smc(budget, collection_of_subsets, unsatisfied, requirement_array):
     """
     This provides a ln|X| + 1 approximation to the set mutlicover problem with a budget constraint.
@@ -48,30 +49,12 @@ def coverage_heuristic(budget_1, budget_2, model):
     :param model: The model with its underlying graph.
     :return: A choice of nocdes to block.
     """
-    node_infections_1, node_infections_2 = simulation_run(model)
+    node_infections_1, node_infections_2 = model.simulation_run()
     # Run through the CBH from DMKD for both contagions.
     choices_1 = try_all_sets(node_infections_1, budget_1, model, 1)
     choices_2 = try_all_sets(node_infections_2, budget_2, model, 2)
     # Return the choices found.
     return choices_1, choices_2
-
-
-def simulation_run(model):
-    """
-    Runs simulation to a fixed point and returns the nodes that move states each time step.
-    :param model: The ndlib diffusion model defined in multiple_contagions.py. The model must already be configured.
-    :return:
-    """
-    fixed_point = False
-    updated_node_list_1 = []
-    updated_node_list_2 = []
-    model.iteration()
-    while not fixed_point:
-        results = model.iteration(node_status=True, first_infected=True)
-        fixed_point = results['first_infected_1'] == results['first_infected_2'] == set()
-        updated_node_list_1.append(list(results['first_infected_1']))
-        updated_node_list_2.append(list(results['first_infected_2']))
-    return updated_node_list_1, updated_node_list_2
 
 
 def try_all_sets(node_infections, budget, model, threshold_index=1):

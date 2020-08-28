@@ -93,7 +93,7 @@ class SimulationRun(unittest.TestCase):
     model.set_initial_status(config)
 
     def test_run_simulation(self):
-        results_1, results_2 = cbh.simulation_run(model=self.model)
+        results_1, results_2 = self.model.simulation_run()
         assert results_1[0] == [3]
         assert results_2[0] == []
 
@@ -114,6 +114,7 @@ class CoverageHeuristic(unittest.TestCase):
     def test_heuristic(self):
         choice_1, choice_2 = cbh.coverage_heuristic(2, 0, model=self.model)
         assert choice_1 == [3]
+        assert choice_2 == []
 
 
 if __name__ == '__main__':

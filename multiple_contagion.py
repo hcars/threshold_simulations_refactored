@@ -140,7 +140,6 @@ class multiple_contagions(DiffusionModel):
                             first_infected_1.add(u)
                             self.graph.nodes[u]['affected_1'] = cnt_infected
 
-
         # identify the changes w.r.t. previous iteration
         delta, node_count, status_delta = self.status_delta(actual_status)
 
@@ -157,3 +156,19 @@ class multiple_contagions(DiffusionModel):
             return_dict['first_infected_1'] = first_infected_1
             return_dict['first_infected_2'] = first_infected_2
         return return_dict
+
+    def simulation_run(self):
+        """
+        Runs simulation to a fixed point and returns the nodes that move states each time step.
+        :return: The newly infected nodes at each time.
+        """
+        fixed_point = False
+        updated_node_list_1 = []
+        updated_node_list_2 = []
+        self.iteration()
+        while not fixed_point:
+            results = self.iteration(node_status=True, first_infected=True)
+            fixed_point = results['first_infected_1'] == results['first_infected_2'] == set()
+            updated_node_list_1.append(list(results['first_infected_1']))
+            updated_node_list_2.append(list(results['first_infected_2']))
+        return updated_node_list_1, updated_node_list_2
