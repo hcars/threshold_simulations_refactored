@@ -1,5 +1,5 @@
 from os.path import exists
-
+import numpy as np
 import networkx as nx
 
 
@@ -12,6 +12,7 @@ def main():
     budgets = (.1, .2, .3)
     minimum_size = lambda x: 10 if x == "jazz" else 20
     for i in range(len(net_names)):
+        np.random.seed(seeds[i])
         net_name = net_names[i]
         G = nx.read_edgelist(network_folder + net_name + '.edges', nodetype=int, create_using=nx.Graph)
         # If there is a node file add it.
@@ -21,18 +22,23 @@ def main():
                 node_id = int(node_str)
                 G.add_node(node_id)
         # Select seed set
-        k_core = nx.k_core(G, 1)
-        k = 2
-        # Keep increasing k core until it is of size 20 or the subgraph gets too small
-        while k < 21:
-            curr_core = nx.k_core(G, k)
-            if curr_core.number_of_nodes() >= minimum_size(net_name):
-                k_core = curr_core
-            else:
-                break
-            k += 1
-        print(list(k_core.nodes()))
-
+        k_core = nx.k_core(G, 20)
+        smallest_size = np.iinfo(np.int).max
+        core_choice = None
+        for component in nx.connected_components(k_core):
+            component = list(k_core.nodes())
+            if len(component) >= minimum_size(net_name):
+               if len(component) < smallest_size:
+                  core_choice = component
+                  smallest_size = len(component)
+        # If the component is really large, shrink it down.
+        if smallest_size >= 2*minimum_size(net_name):
+           for i in range(int(.5*smallest_size)):
+               core_choice.pop(np.random.randint(0, len(core_choice)))             
+        # Pull out budget
+        for j in range(3):
+        
+    
 
 
 if __name__ == '__main__':
