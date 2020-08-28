@@ -49,7 +49,7 @@ def coverage_heuristic(budget_1, budget_2, model):
     :param model: The model with its underlying graph.
     :return: A choice of nocdes to block.
     """
-    node_infections_1, node_infections_2 = model.simulation_run()
+    node_infections_1, node_infections_2, results = model.simulation_run()
     # Run through the CBH from DMKD for both contagions.
     choices_1 = try_all_sets(node_infections_1, budget_1, model, 1)
     choices_2 = try_all_sets(node_infections_2, budget_2, model, 2)

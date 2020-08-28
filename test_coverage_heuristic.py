@@ -93,7 +93,8 @@ class SimulationRun(unittest.TestCase):
     model.set_initial_status(config)
 
     def test_run_simulation(self):
-        results_1, results_2 = self.model.simulation_run()
+        results_1, results_2, results = self.model.simulation_run()
+        assert len(results_1) == 1
         assert results_1[0] == [3]
         assert results_2[0] == []
 

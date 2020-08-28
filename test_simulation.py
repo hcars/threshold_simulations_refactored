@@ -14,6 +14,8 @@ config.add_model_parameter('interaction_1', 0)
 config.add_model_parameter('interaction_2', 0)
 config.add_node_set_configuration('threshold_1', {u: np.random.randint(1, 50) for u in G.nodes})
 config.add_node_set_configuration('threshold_2', {u: np.random.randint(1, 50) for u in G.nodes})
+config.add_node_set_configuration('blocked_1', {u: False for u in G.nodes})
+config.add_node_set_configuration('blocked_2', {u: False for u in G.nodes})
 
 seed_set_1 = list({np.random.randint(0, 1000) for i in range(10)})
 seed_set_2 = list({np.random.randint(0, 1000) for i in range(10)})
@@ -28,3 +30,4 @@ model.iteration()
 while not fixed_point:
     iteration_results = model.iteration(node_status=True, first_infected=True)
     fixed_point = iteration_results['first_infected_1'] == iteration_results['first_infected_2'] == set()
+print(iteration_results['node_count'])

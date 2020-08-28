@@ -43,6 +43,18 @@ class multiple_contagions(DiffusionModel):
                     "range": [0, np.iinfo(np.uint32).max],
                     "optional": True
                 },
+                "blocked_1": {
+                    "descr": "Blocked for contagion 1.",
+                    "range": [False, True],
+                    "optional": False,
+                    "default": False
+                },
+                "blocked_2": {
+                    "descr": "Blocked for contagion 2.",
+                    "range": [False, True],
+                    "optional": False,
+                    "default": False
+                },
 
             },
             "edges": {}
@@ -92,24 +104,27 @@ class multiple_contagions(DiffusionModel):
                             cnt_infected_2 += 1
                     satisfied_1 = threshold_1 <= cnt_infected
                     satisfied_2 = threshold_2 <= cnt_infected_2
-                    if satisfied_1 and satisfied_2:
+                    if satisfied_1 and satisfied_2 and not (
+                            self.params['nodes']['blocked_1'][u] or self.params['nodes']['blocked_2'][u]):
                         actual_status[u] = 3
                         if first_infected:
                             first_infected_1.add(u)
                             first_infected_2.add(u)
                             self.graph.nodes[u]['affected_1'] = cnt_infected
                             self.graph.nodes[u]['affected_2'] = cnt_infected_2
-                    elif satisfied_1:
+                    elif satisfied_1 and not self.params['nodes']['blocked_1'][u]:
                         actual_status[u] = 1
                         if first_infected:
                             first_infected_1.add(u)
                             self.graph.nodes[u]['affected_1'] = cnt_infected
-                    elif satisfied_2:
+                    elif satisfied_2 and self.params['nodes']['blocked_2'][u]:
                         actual_status[u] = 2
                         if first_infected:
                             first_infected_2.add(u)
                             self.graph.nodes[u]['affected_2'] = cnt_infected_2
                 elif u_status == 1:
+                    if self.params['nodes']['blocked_2'][u]:
+                        continue
                     # Counts the infected status of neighbors, updates the threshold based on the interaction, and
                     # updates node state appropriately.
                     threshold_2 += int(threshold_2 * self.params['model']["interaction_1"])
@@ -125,6 +140,8 @@ class multiple_contagions(DiffusionModel):
                             first_infected_2.add(u)
                             self.graph.nodes[u]['affected_2'] = cnt_infected_2
                 elif u_status == 2:
+                    if self.params['nodes']['blocked_1'][u]:
+                        continue
                     # Counts the infected status of neighbors, updates the threshold based on the interaction, and
                     # updates node state appropriately.
                     threshold_1 += int(threshold_1 * self.params['model']["interaction_2"])
@@ -163,6 +180,7 @@ class multiple_contagions(DiffusionModel):
         :return: The newly infected nodes at each time.
         """
         fixed_point = False
+        results = None
         updated_node_list_1 = []
         updated_node_list_2 = []
         self.iteration()
@@ -171,4 +189,4 @@ class multiple_contagions(DiffusionModel):
             fixed_point = results['first_infected_1'] == results['first_infected_2'] == set()
             updated_node_list_1.append(list(results['first_infected_1']))
             updated_node_list_2.append(list(results['first_infected_2']))
-        return updated_node_list_1, updated_node_list_2
+        return updated_node_list_1[:-1], updated_node_list_2[:-1], results
