@@ -33,7 +33,7 @@ def greedy_smc(budget, collection_of_subsets, unsatisfied, requirement_array):
         # Decrement coverage requirements and remove from the unsatisfied set as necessary
         for element in chosen_set:
             requirement_array[element] -= 1
-            if requirement_array[element] <= 0:
+            if requirement_array[element] == 0:
                 unsatisfied.remove(element)
         if not unsatisfied:
             break
@@ -61,7 +61,7 @@ def try_all_sets(node_infections, budget, model, threshold_index=1):
     # Start iteration at i = 1 to find best nodes for contagion threshold_index
     min_unsatisfied = np.iinfo(np.int32).max
     best_solution = []
-    for i in range(len(node_infections)):
+    for i in range(len(node_infections) - 1):
         if len(node_infections[i]) <= budget:
             # If we can vaccinate all nodes at infected at this time step return that.
             return node_infections[i]
@@ -73,9 +73,10 @@ def try_all_sets(node_infections, budget, model, threshold_index=1):
         for u in node_infections[i]:
             subset = set()
             for v in model.graph.neighbors(u):
-                subset.add(v)
-                if v not in unsatisfied:
-                    unsatisfied.add(v)
+                if v in node_infections[i+1]:
+                   subset.add(v)
+                   if v not in unsatisfied:
+                      unsatisfied.add(v)
             subsets.append(subset)
         # Compute requirement values
         for unsat in unsatisfied:

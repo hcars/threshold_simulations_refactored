@@ -117,7 +117,7 @@ class multiple_contagions(DiffusionModel):
                         if first_infected:
                             first_infected_1.add(u)
                             self.graph.nodes[u]['affected_1'] = cnt_infected
-                    elif satisfied_2 and self.params['nodes']['blocked_2'][u]:
+                    elif satisfied_2 and not self.params['nodes']['blocked_2'][u]:
                         actual_status[u] = 2
                         if first_infected:
                             first_infected_2.add(u)

@@ -3,7 +3,7 @@ import ndlib.models.ModelConfig as mc
 from multiple_contagion import multiple_contagions
 
 
-def config_model(G, threshold, seed_set_1, seed_set_2, blocked_1=None, blocked_2=None):
+def config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3=None, blocked_1=None, blocked_2=None):
     model = multiple_contagions(G)
     config = mc.Configuration()
     if blocked_1 is None:
@@ -27,9 +27,7 @@ def config_model(G, threshold, seed_set_1, seed_set_2, blocked_1=None, blocked_2
     # Initialize seed set
     config.add_model_initial_configuration('Infected', seed_set_1)
     config.add_model_initial_configuration('Infected_2', seed_set_2)
-    # Add blocked nodes
-    config.add_node_set_configuration('blocked_1', {u: True for u in blocked_1})
-    config.add_node_set_configuration('blocked_2', {u: True for u in blocked_2})
+    config.add_model_initial_configuration('Infected_Both', seed_set_3)
     # Set configuration
     model.set_initial_status(config)
     return model
