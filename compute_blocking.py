@@ -19,7 +19,7 @@ def main():
     seeds = (6893, 20591, 20653)
     net_names = ["jazz", "astroph", "wiki"]
     thresholds = (2, 3, 5)
-    budgets = (.1, .2, .3, .35)
+    budgets = (.01, .05, .1, .15, .2, .3, .35)
     for i in range(len(net_names)):
         np.random.seed(seeds[i])
         net_name = net_names[i]
@@ -48,7 +48,7 @@ def main():
             elif roll == 1:
                 seed_set_1.append(component[index])
         # Pull out budget
-        for j in range(4):
+        for j in range(7):
             budget = int(budgets[j] * G.number_of_nodes())
             # Pull out threshold
             for k in range(3):
