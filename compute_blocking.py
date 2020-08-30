@@ -94,6 +94,7 @@ def main():
                     nodes_by_degree = sorted(G.degree(), key=lambda x: x[1], reverse=True)
                     choices_1 = list(map(lambda x: x[0], nodes_by_degree[:int(budget_1)]))
                     choices_2 = list(map(lambda x: x[0], nodes_by_degree[:int(budget_2)]))
+                    print(nodes_by_degree)
                     print(choices_1)
                     exit()
                     # Run forward
