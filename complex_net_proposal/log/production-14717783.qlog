@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "compute_blocking.py", line 113, in <module>
+    main()
+  File "compute_blocking.py", line 95, in main
+    choices_1 = list(map(lambda x: x[0], nodes_by_degree[:budget_1]))
+TypeError: slice indices must be integers or None or have an __index__ method

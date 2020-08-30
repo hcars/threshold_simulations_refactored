@@ -24,7 +24,7 @@ def main():
     seeds = (6893, 20591, 20653)
     net_names = ["jazz", "astroph", "wiki"]
     thresholds = (2, 3, 5)
-    budgets = (.01, .05, .1, .15, .2, .3, .35)
+    budgets = (.02, .04, .06, .1, .2, .3)
     for i in range(len(net_names)):
         np.random.seed(seeds[i])
         net_name = net_names[i]
@@ -54,7 +54,7 @@ def main():
                 elif roll == 1:
                     seed_set_1.append(component[index])
             # Pull out budget
-            for j in range(7):
+            for j in range(6):
                 budget = int(budgets[j] * G.number_of_nodes())
                 # Pull out threshold
                 for k in range(3):
@@ -92,8 +92,8 @@ def main():
                     # Find high degree nodes
                     network = copy.deepcopy(G)
                     nodes_by_degree = sorted(G.degree(), key=lambda x: x[1])
-                    choices_1 = list(map(lambda x: x[0], nodes_by_degree[:budget_1]))
-                    choices_2 = list(map(lambda x: x[0], nodes_by_degree[:budget_2]))
+                    choices_1 = list(map(lambda x: x[0], nodes_by_degree[:int(budget_1)]))
+                    choices_2 = list(map(lambda x: x[0], nodes_by_degree[:int(budget_2)]))
                     # Run forward
                     model = utils.config_model(network, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                choices_2)
