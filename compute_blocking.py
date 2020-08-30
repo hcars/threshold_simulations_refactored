@@ -41,7 +41,7 @@ def main():
         # Select seed set
         k_core = nx.k_core(G, 20)
         for seed_size in [.01]:
-            component = list(k_core.nodes())[:int(G.number_of_nodes()*seed_size)]
+            component = list(k_core.nodes())[:int(G.number_of_nodes() * seed_size)]
             seed_set_1 = []
             seed_set_2 = []
             seed_set_3 = []
@@ -91,9 +91,11 @@ def main():
                     node_infections_1_blocked, node_infections_2_blocked, results_blocked = model.simulation_run()
                     # Find high degree nodes
                     network = copy.deepcopy(G)
-                    nodes_by_degree = sorted(G.degree(), key=lambda x: x[1])
+                    nodes_by_degree = sorted(G.degree(), key=lambda x: x[1], reverse=True)
                     choices_1 = list(map(lambda x: x[0], nodes_by_degree[:int(budget_1)]))
                     choices_2 = list(map(lambda x: x[0], nodes_by_degree[:int(budget_2)]))
+                    print(choices_1)
+                    exit()
                     # Run forward
                     model = utils.config_model(network, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                choices_2)
@@ -101,7 +103,8 @@ def main():
                     with open('complex_net_proposal/experiment_results/results.csv', 'a', newline='') as results_fp:
                         csv_writer = csv.writer(results_fp, delimiter=',')
                         blocked_counts = results_blocked['node_count']
-                        result_data = [net_name, str(threshold), str(int(G.number_of_nodes()*seed_size)), str(budget), str(budget_1),
+                        result_data = [net_name, str(threshold), str(int(G.number_of_nodes() * seed_size)), str(budget),
+                                       str(budget_1),
                                        str(budget_2)] + list(
                             map(lambda x: str(x), results['node_count'].values())) + list(
                             map(lambda x: str(x), results_blocked['node_count'].values())) + list(
