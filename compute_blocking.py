@@ -35,7 +35,7 @@ def main():
             G.nodes[node]['affected_2'] = 0
         # Select seed set
         k_core = nx.k_core(G, 20)
-        component = list(next(nx.connected_components(k_core)))
+        component = list(k_core.nodes())[:20]
         seed_set_1 = []
         seed_set_2 = []
         seed_set_3 = []
