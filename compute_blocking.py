@@ -40,8 +40,8 @@ def main():
             G.nodes[node]['affected_2'] = 0
         # Select seed set
         k_core = nx.k_core(G, 20)
-        for seed_size in [10, 20]:
-            component = list(k_core.nodes())[:20]
+        for seed_size in [.01]:
+            component = list(k_core.nodes())[:int(G.number_of_nodes()*seed_size)]
             seed_set_1 = []
             seed_set_2 = []
             seed_set_3 = []
@@ -101,7 +101,7 @@ def main():
                     with open('complex_net_proposal/experiment_results/results.csv', 'a', newline='') as results_fp:
                         csv_writer = csv.writer(results_fp, delimiter=',')
                         blocked_counts = results_blocked['node_count']
-                        result_data = [net_name, str(threshold), str(seed_size), str(budget), str(budget_1),
+                        result_data = [net_name, str(threshold), str(int(G.number_of_nodes()*seed_size)), str(budget), str(budget_1),
                                        str(budget_2)] + list(
                             map(lambda x: str(x), results['node_count'].values())) + list(
                             map(lambda x: str(x), results_blocked['node_count'].values())) + list(
