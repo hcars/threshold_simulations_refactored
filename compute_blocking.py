@@ -10,7 +10,7 @@ import utils
 
 
 def main():
-    field_names = ['network_name', 'sample', 'threshold', 'seed_size', 'budget_total', 'budget_1', 'budget_2'] + [
+    field_names = ['network_name', 'threshold', 'seed_size', 'budget_total', 'budget_1', 'budget_2'] + [
         str(i) + "_no_block" for i in
         range(4)] + [str(i) + "_cbh"
                      for i in
@@ -21,10 +21,13 @@ def main():
         csv_writer.writerow(field_names)
     # Load in networks
     network_folder = "complex_net_proposal/experiment_networks/"
+    # Constants
     seeds = (6893, 20591, 20653)
     net_names = ["jazz", "astroph", "wiki"]
     thresholds = (2, 3, 5)
-    budgets = tuple(.01 + i*.01 for i in range(11))
+    budgets = tuple(.01 + i * .01 for i in range(11))
+    sample_number = 10
+
     for i in range(len(net_names)):
         np.random.seed(seeds[i])
         net_name = net_names[i]
@@ -41,26 +44,34 @@ def main():
         # Select seed set
         k_core = nx.k_core(G, 20)
         for seed_size in [10, 20]:
-            for sample in range(10):
-                component = np.random.choice(list(k_core.nodes()), seed_size, replace=False)
-                seed_set_1 = []
-                seed_set_2 = []
-                seed_set_3 = []
-                for index in range(len(component)):
-                    roll = np.random.randint(1, 4)
-                    if roll == 3:
-                        seed_set_3.append(component[index])
-                    elif roll == 2:
-                        seed_set_2.append(component[index])
-                    elif roll == 1:
-                        seed_set_1.append(component[index])
-                # Pull out budget
-                for j in range(len(budgets)):
-                    budget = int(budgets[j] * G.number_of_nodes())
+            # Pull out budget
+            for j in range(len(budgets)):
+                budget = int(budgets[j] * G.number_of_nodes())
+                for k in range(len(thresholds)):
                     # Pull out threshold
-                    for k in range(3):
+                    threshold = thresholds[k]
+                    # Initialize accumulators
+                    results_avg = {i: 0 for i in range(4)}
+                    results_blocked_avg = {i: 0 for i in range(4)}
+                    results_blocked_degree_avg = {i: 0 for i in range(4)}
+                    budget_1_avg = 0
+                    budget_2_avg = 0
+                    # Sample from the seed
+                    for sample in range(sample_number):
+                        component = np.random.choice(list(k_core.nodes()), seed_size, replace=False)
+                        seed_set_1 = []
+                        seed_set_2 = []
+                        seed_set_3 = []
+                        for index in range(len(component)):
+                            roll = np.random.randint(1, 4)
+                            if roll == 3:
+                                seed_set_3.append(component[index])
+                            elif roll == 2:
+                                seed_set_2.append(component[index])
+                            elif roll == 1:
+                                seed_set_1.append(component[index])
                         network = copy.deepcopy(G)
-                        threshold = thresholds[k]
+
                         # Configure model
                         model = utils.config_model(network, threshold, seed_set_1, seed_set_2, seed_set_3)
                         node_infections_1, node_infections_2, results = model.simulation_run()
@@ -80,6 +91,9 @@ def main():
                         else:
                             budget_1 = budget // 2
                             budget_2 = budget - budget_1
+                        # Increment accumulators
+                        budget_1_avg += budget_1
+                        budget_2_avg += budget_2
                         # Run through the CBH from DMKD for both contagions.
                         choices_1 = cbh.try_all_sets(node_infections_1, budget_1, model, 1)
                         choices_2 = cbh.try_all_sets(node_infections_2, budget_2, model, 2)
@@ -95,25 +109,30 @@ def main():
                         nodes_by_degree = sorted(G.degree(), key=lambda x: x[1], reverse=True)
                         choices_1 = list(map(lambda x: x[0], nodes_by_degree[:int(budget_1)]))
                         choices_2 = list(map(lambda x: x[0], nodes_by_degree[:int(budget_2)]))
-                        print(nodes_by_degree)
-                        print(choices_1)
-                        exit()
+
                         # Run forward
                         model = utils.config_model(network, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
                         node_infections_1_blocked_degree, node_infections_2_blocked_degree, results_blocked_degree = model.simulation_run()
-
-                        with open('complex_net_proposal/experiment_results/results.csv', 'a', newline='') as results_fp:
-                            csv_writer = csv.writer(results_fp, delimiter=',')
-                            blocked_counts = results_blocked['node_count']
-                            result_data = [net_name, str(sample), str(threshold), str(seed_size),
-                                           str(budget),
-                                           str(budget_1),
-                                           str(budget_2)] + list(
-                                map(lambda x: str(x), results['node_count'].values())) + list(
-                                map(lambda x: str(x), results_blocked['node_count'].values())) + list(
-                                map(lambda x: str(x), results_blocked_degree['node_count'].values()))
-                            csv_writer.writerow(result_data)
+                        for state in range(4):
+                            results_avg[state] += results['node_count']
+                            results_blocked_avg[state] += results_blocked['node_count']
+                            results_blocked_degree_avg[state] += results_blocked_degree['node_count']
+                    for state in range(4):
+                        results_avg[state] /= sample_number
+                        results_blocked_avg[state] /= sample_number
+                        results_blocked_degree_avg[state] /= sample_number
+                    with open('complex_net_proposal/experiment_results/results.csv', 'a', newline='') as results_fp:
+                        csv_writer = csv.writer(results_fp, delimiter=',')
+                        # Write problem data
+                        result_data = [net_name, str(threshold), str(seed_size),
+                                       str(budget),
+                                       str(budget_1_avg / sample_number),
+                                       str(budget_2_avg / sample_number)] + list(
+                            map(lambda x: str(x), results_avg)) + list(
+                            map(lambda x: str(x), results_blocked_avg)) + list(
+                            map(lambda x: str(x), results_blocked_degree_avg))
+                        csv_writer.writerow(result_data)
 
 
 if __name__ == '__main__':
