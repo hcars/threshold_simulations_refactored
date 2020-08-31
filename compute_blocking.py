@@ -39,9 +39,9 @@ def main():
     network_folder = "complex_net_proposal/experiment_networks/"
     # Constants
     seeds = (6893, 20591, 20653)
-    net_names = ["netscience", "astroph", "wiki"]
-    thresholds = (2, 3, 5)
-    budgets = tuple(.01 + i * .01 for i in range(11))
+    net_names = ["fb-pages-politician", "astroph", "wiki"]
+    thresholds = (2, 3, 4)
+    budgets = [.005] + [.01 + i * .01 for i in range(12)]
     sample_number = 10
 
     for i in range(len(net_names)):
@@ -58,8 +58,7 @@ def main():
             G.nodes[node]['affected_1'] = 0
             G.nodes[node]['affected_2'] = 0
         # Select seed set
-        core_size = lambda x: 19 if x == 'netscience' else 20
-        k_core = nx.k_core(G, core_size(net_name))
+        k_core = nx.k_core(G, 20)
         for seed_size in [10, 20]:
             # Initialize accumulators
             # Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg, results_degree_avg))
