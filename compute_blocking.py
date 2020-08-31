@@ -9,6 +9,22 @@ import coverage_heuristic as cbh
 import utils
 
 
+def choose_seed(core, seed_size):
+    component = np.random.choice(core, seed_size, replace=False)
+    seed_set_1 = []
+    seed_set_2 = []
+    seed_set_3 = []
+    for index in range(len(component)):
+        roll = np.random.randint(1, 4)
+        if roll == 3:
+            seed_set_3.append(component[index])
+        elif roll == 2:
+            seed_set_2.append(component[index])
+        elif roll == 1:
+            seed_set_1.append(component[index])
+    return seed_set_1, seed_set_2, seed_set_3
+
+
 def main():
     field_names = ['network_name', 'threshold', 'seed_size', 'budget_total', 'budget_1', 'budget_2'] + [
         str(i) + "_no_block" for i in
@@ -23,7 +39,7 @@ def main():
     network_folder = "complex_net_proposal/experiment_networks/"
     # Constants
     seeds = (6893, 20591, 20653)
-    net_names = ["jazz", "astroph", "wiki"]
+    net_names = ["netscience", "astroph", "wiki"]
     thresholds = (2, 3, 5)
     budgets = tuple(.01 + i * .01 for i in range(11))
     sample_number = 10
@@ -44,32 +60,21 @@ def main():
         # Select seed set
         k_core = nx.k_core(G, 20)
         for seed_size in [10, 20]:
-            # Pull out budget
-            for j in range(len(budgets)):
-                budget = int(budgets[j] * G.number_of_nodes())
+            # Initialize accumulators
+            # Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg, results_degree_avg))
+            avgs = {threshold: {budget: ({state: 0 for state in range(4)}) for budget in budgets} for threshold in
+                    thresholds}
+            budget_1_avg = 0
+            budget_2_avg = 0
+            for sample in range(sample_number):
+                # Choose seed set
+                seed_set_1, seed_set_2, seed_set_3 = choose_seed(list(k_core.nodes()), seed_size)
                 for k in range(len(thresholds)):
                     # Pull out threshold
                     threshold = thresholds[k]
-                    # Initialize accumulators
-                    results_avg = {i: 0 for i in range(4)}
-                    results_blocked_avg = {i: 0 for i in range(4)}
-                    results_blocked_degree_avg = {i: 0 for i in range(4)}
-                    budget_1_avg = 0
-                    budget_2_avg = 0
-                    # Sample from the seed
-                    for sample in range(sample_number):
-                        component = np.random.choice(list(k_core.nodes()), seed_size, replace=False)
-                        seed_set_1 = []
-                        seed_set_2 = []
-                        seed_set_3 = []
-                        for index in range(len(component)):
-                            roll = np.random.randint(1, 4)
-                            if roll == 3:
-                                seed_set_3.append(component[index])
-                            elif roll == 2:
-                                seed_set_2.append(component[index])
-                            elif roll == 1:
-                                seed_set_1.append(component[index])
+                    for j in range(len(budgets)):
+                        # Get the budget
+                        budget = int(budgets[j] * G.number_of_nodes())
                         network = copy.deepcopy(G)
                         # Configure model
                         model = utils.config_model(network, threshold, seed_set_1, seed_set_2, seed_set_3)
@@ -114,13 +119,14 @@ def main():
                                                    choices_2)
                         node_infections_1_blocked_degree, node_infections_2_blocked_degree, results_blocked_degree = model.simulation_run()
                         for state in range(4):
-                            results_avg[state] += results['node_count'][state]
-                            results_blocked_avg[state] += results_blocked['node_count'][state]
-                            results_blocked_degree_avg[state] += results_blocked_degree['node_count'][state]
-                    for state in range(4):
-                        results_avg[state] /= sample_number
-                        results_blocked_avg[state] /= sample_number
-                        results_blocked_degree_avg[state] /= sample_number
+                            avgs[threshold][budget][0][state] += results['node_count'][state]
+                            avgs[threshold][budget][1][state] += results_blocked['node_count'][state]
+                            avgs[threshold][budget][2][state] += results_blocked_degree['node_count'][state]
+            for threshold in thresholds:
+                for budget in budgets:
+                    for accumulator in range(4):
+                        for state in range(4):
+                            avgs[threshold][budget][accumulator][state] /= sample_number
                     with open('complex_net_proposal/experiment_results/results.csv', 'a', newline='') as results_fp:
                         csv_writer = csv.writer(results_fp, delimiter=',')
                         # Write problem data
@@ -128,9 +134,9 @@ def main():
                                        str(budget),
                                        str(budget_1_avg / sample_number),
                                        str(budget_2_avg / sample_number)] + list(
-                            map(lambda x: str(x), results_avg.values())) + list(
-                            map(lambda x: str(x), results_blocked_avg.values())) + list(
-                            map(lambda x: str(x), results_blocked_degree_avg.values()))
+                            map(lambda x: str(x), avgs[threshold][budget][0].values())) + list(
+                            map(lambda x: str(x), avgs[threshold][budget][1].values())) + list(
+                            map(lambda x: str(x), avgs[threshold][budget][2].values()))
                         csv_writer.writerow(result_data)
 
 
