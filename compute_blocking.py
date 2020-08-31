@@ -71,7 +71,6 @@ def main():
                             elif roll == 1:
                                 seed_set_1.append(component[index])
                         network = copy.deepcopy(G)
-
                         # Configure model
                         model = utils.config_model(network, threshold, seed_set_1, seed_set_2, seed_set_3)
                         node_infections_1, node_infections_2, results = model.simulation_run()
@@ -115,9 +114,9 @@ def main():
                                                    choices_2)
                         node_infections_1_blocked_degree, node_infections_2_blocked_degree, results_blocked_degree = model.simulation_run()
                         for state in range(4):
-                            results_avg[state] += results['node_count']
-                            results_blocked_avg[state] += results_blocked['node_count']
-                            results_blocked_degree_avg[state] += results_blocked_degree['node_count']
+                            results_avg[state] += results['node_count'][state]
+                            results_blocked_avg[state] += results_blocked['node_count'][state]
+                            results_blocked_degree_avg[state] += results_blocked_degree['node_count'][state]
                     for state in range(4):
                         results_avg[state] /= sample_number
                         results_blocked_avg[state] /= sample_number
@@ -129,9 +128,9 @@ def main():
                                        str(budget),
                                        str(budget_1_avg / sample_number),
                                        str(budget_2_avg / sample_number)] + list(
-                            map(lambda x: str(x), results_avg)) + list(
-                            map(lambda x: str(x), results_blocked_avg)) + list(
-                            map(lambda x: str(x), results_blocked_degree_avg))
+                            map(lambda x: str(x), results_avg.values())) + list(
+                            map(lambda x: str(x), results_blocked_avg.values())) + list(
+                            map(lambda x: str(x), results_blocked_degree_avg.values()))
                         csv_writer.writerow(result_data)
 
 
