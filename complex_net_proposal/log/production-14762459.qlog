@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "compute_blocking.py", line 143, in <module>
+    main()
+  File "compute_blocking.py", line 61, in main
+    k_core = nx.k_core(G, 20)
+  File "/home/hlc5v/.conda/envs/threshold_sim/lib/python3.8/site-packages/networkx/algorithms/core.py", line 197, in k_core
+    return _core_subgraph(G, k_filter, k, core_number)
+  File "/home/hlc5v/.conda/envs/threshold_sim/lib/python3.8/site-packages/networkx/algorithms/core.py", line 141, in _core_subgraph
+    core = core_number(G)
+  File "<decorator-gen-250>", line 2, in core_number
+  File "/home/hlc5v/.conda/envs/threshold_sim/lib/python3.8/site-packages/networkx/utils/decorators.py", line 78, in _not_implemented_for
+    return not_implement_for_func(*args, **kwargs)
+  File "/home/hlc5v/.conda/envs/threshold_sim/lib/python3.8/site-packages/networkx/algorithms/core.py", line 90, in core_number
+    raise NetworkXError(msg)
+networkx.exception.NetworkXError: Input graph has self loops which is not permitted; Consider using G.remove_edges_from(nx.selfloop_edges(G)).
