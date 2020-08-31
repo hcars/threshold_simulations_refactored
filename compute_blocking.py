@@ -26,7 +26,7 @@ def choose_seed(core, seed_size):
 
 
 def main():
-    field_names = ['network_name', 'threshold', 'seed_size', 'budget_total', 'budget_1', 'budget_2'] + [
+    field_names = ['network_name', 'threshold', 'seed_size', 'budget_total'] + [
         str(i) + "_no_block" for i in
         range(4)] + [str(i) + "_cbh"
                      for i in
@@ -58,11 +58,12 @@ def main():
             G.nodes[node]['affected_1'] = 0
             G.nodes[node]['affected_2'] = 0
         # Select seed set
-        k_core = nx.k_core(G, 20)
+        core_size = lambda x: 19 if x == 'netscience' else 20
+        k_core = nx.k_core(G, core_size(net_name))
         for seed_size in [10, 20]:
             # Initialize accumulators
             # Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg, results_degree_avg))
-            avgs = {threshold: {budget: ({state: 0 for state in range(4)}) for budget in budgets} for threshold in
+            avgs = {threshold: {int(budget*G.number_of_nodes()): tuple({state: 0 for state in range(4)} for i in range(3)) for budget in budgets} for threshold in
                     thresholds}
             budget_1_avg = 0
             budget_2_avg = 0
@@ -124,16 +125,15 @@ def main():
                             avgs[threshold][budget][2][state] += results_blocked_degree['node_count'][state]
             for threshold in thresholds:
                 for budget in budgets:
-                    for accumulator in range(4):
+                    budget = int(budget*G.number_of_nodes())
+                    for accumulator in range(3):
                         for state in range(4):
                             avgs[threshold][budget][accumulator][state] /= sample_number
                     with open('complex_net_proposal/experiment_results/results.csv', 'a', newline='') as results_fp:
                         csv_writer = csv.writer(results_fp, delimiter=',')
                         # Write problem data
                         result_data = [net_name, str(threshold), str(seed_size),
-                                       str(budget),
-                                       str(budget_1_avg / sample_number),
-                                       str(budget_2_avg / sample_number)] + list(
+                                       str(budget)] + list(
                             map(lambda x: str(x), avgs[threshold][budget][0].values())) + list(
                             map(lambda x: str(x), avgs[threshold][budget][1].values())) + list(
                             map(lambda x: str(x), avgs[threshold][budget][2].values()))
