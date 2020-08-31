@@ -24,7 +24,7 @@ def main():
     seeds = (6893, 20591, 20653)
     net_names = ["jazz", "astroph", "wiki"]
     thresholds = (2, 3, 5)
-    budgets = (.02, .04, .06, .08, .1, .12, .14, .16, .18, .2, .22)
+    budgets = tuple(.01 + i*.01 for i in range(11))
     for i in range(len(net_names)):
         np.random.seed(seeds[i])
         net_name = net_names[i]
