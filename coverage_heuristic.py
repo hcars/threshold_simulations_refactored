@@ -57,7 +57,7 @@ def coverage_heuristic(budget_1, budget_2, model):
     return choices_1, choices_2
 
 
-def try_all_sets(node_infections, budget, model, threshold_index=1):
+def try_all_sets(node_infections, budget, model, seed_set, threshold_index=1):
     # Start iteration at i = 1 to find best nodes for contagion threshold_index
     min_unsatisfied = np.iinfo(np.int32).max
     best_solution = []
@@ -73,10 +73,10 @@ def try_all_sets(node_infections, budget, model, threshold_index=1):
         for u in node_infections[i]:
             subset = set()
             for v in model.graph.neighbors(u):
-                if v in node_infections[i+1]:
-                   subset.add(v)
-                   if v not in unsatisfied:
-                      unsatisfied.add(v)
+                if v in node_infections[i + 1] and v not in seed_set:
+                    subset.add(v)
+                    if v not in unsatisfied:
+                        unsatisfied.add(v)
             subsets.append(subset)
         # Compute requirement values
         for unsat in unsatisfied:
