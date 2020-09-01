@@ -111,8 +111,18 @@ def main():
                         # Find high degree nodes
                         network = copy.deepcopy(G)
                         nodes_by_degree = sorted(G.degree(), key=lambda x: x[1], reverse=True)
-                        choices_1 = list(map(lambda x: x[0], nodes_by_degree[:int(budget_1)]))
-                        choices_2 = list(map(lambda x: x[0], nodes_by_degree[:int(budget_2)]))
+                        seed_set = set(seed_set_1 + seed_set_2 + seed_set_3)
+                        index = 0
+                        while len(choices_1) < budget_1:
+                            if nodes_by_degree[index][0] not in seed_set:
+                                choices_1.append(nodes_by_degree[index][0])
+                            index += 1
+                        index = 0
+                        while len(choices_2) < budget_2:
+                            if nodes_by_degree[index][0] not in seed_set:
+                                choices_2.append(nodes_by_degree[index][0])
+                            index += 1
+
 
                         # Run forward
                         model = utils.config_model(network, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
