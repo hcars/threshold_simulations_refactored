@@ -62,8 +62,10 @@ def main():
         for seed_size in [10, 20]:
             # Initialize accumulators
             # Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg, results_degree_avg))
-            avgs = {threshold: {int(budget*G.number_of_nodes()): tuple({state: 0 for state in range(4)} for i in range(3)) for budget in budgets} for threshold in
-                    thresholds}
+            avgs = {
+                threshold: {int(budget * G.number_of_nodes()): tuple({state: 0 for state in range(4)} for i in range(3))
+                            for budget in budgets} for threshold in
+                thresholds}
             budget_1_avg = 0
             budget_2_avg = 0
             for sample in range(sample_number):
@@ -123,7 +125,6 @@ def main():
                                 choices_2.append(nodes_by_degree[index][0])
                             index += 1
 
-
                         # Run forward
                         model = utils.config_model(network, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
@@ -134,7 +135,7 @@ def main():
                             avgs[threshold][budget][2][state] += results_blocked_degree['node_count'][state]
             for threshold in thresholds:
                 for budget in budgets:
-                    budget = int(budget*G.number_of_nodes())
+                    budget = int(budget * G.number_of_nodes())
                     for accumulator in range(3):
                         for state in range(4):
                             avgs[threshold][budget][accumulator][state] /= sample_number
