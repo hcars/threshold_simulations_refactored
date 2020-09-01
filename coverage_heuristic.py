@@ -71,13 +71,14 @@ def try_all_sets(node_infections, budget, model, seed_set, threshold_index=1):
         requirement_array = {}
         # Construct subsets and unsatisfied array
         for u in node_infections[i]:
-            subset = set()
-            for v in model.graph.neighbors(u):
-                if v in node_infections[i + 1] and v not in seed_set:
-                    subset.add(v)
-                    if v not in unsatisfied:
-                        unsatisfied.add(v)
-            subsets.append(subset)
+            if u not in seed_set:
+                subset = set()
+                for v in model.graph.neighbors(u):
+                    if v in node_infections[i + 1]:
+                        subset.add(v)
+                        if v not in unsatisfied:
+                            unsatisfied.add(v)
+                subsets.append(subset)
         # Compute requirement values
         for unsat in unsatisfied:
             threshold = model.params['nodes']["threshold_" + str(threshold_index)][unsat]
