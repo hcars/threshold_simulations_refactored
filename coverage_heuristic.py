@@ -63,16 +63,16 @@ def try_all_sets(node_infections, budget, model, seed_set, threshold_index=1):
     best_solution = []
     iterations = max(1, len(node_infections) - 1)
     for i in range(iterations):
-        available_to_block = node_infections[i].difference(seed_set)
-        if len(node_infections[i]) <= budget:
+        available_to_block = np.setdiff1d(node_infections[i], seed_set)
+        if len(available_to_block) <= budget:
             # If we can vaccinate all nodes at infected at this time step return that.
-            return node_infections[i]
+            return available_to_block
         subsets = []
         unsatisfied = set()
         # Initialize requirement dict
         requirement_array = {}
         # Construct subsets and unsatisfied array
-        for u in node_infections[i]:
+        for u in available_to_block:
             subset = set()
             for v in model.graph.neighbors(u):
                 if v in node_infections[i + 1]:
@@ -90,11 +90,11 @@ def try_all_sets(node_infections, budget, model, seed_set, threshold_index=1):
         cover_approximation, chosen, unsatisfied_return = greedy_smc(budget, subsets, unsatisfied, requirement_array)
         if not unsatisfied_return:
             # If we have found an adequate cover, return that.
-            return [node_infections[i][index] for index in chosen]
+            return [available_to_block[index] for index in chosen]
         # Check to see if the solution is the best failing one
         num_unsatisfied = len(unsatisfied_return)
         if min_unsatisfied > num_unsatisfied:
             min_unsatisfied = num_unsatisfied
-            best_solution = [node_infections[i][index] for index in chosen]
+            best_solution = [available_to_block[index] for index in chosen]
     # If no satisfied set is found, return the one with the least violations
     return best_solution
