@@ -45,12 +45,16 @@ config.add_model_initial_configuration('Infected_Both', seed_set_3)
 
 model.set_initial_status(config)
 
-fixed_point = False
-model.iteration()
-while not fixed_point:
-    iteration_results = model.iteration(node_status=True, first_infected=True)
-    fixed_point = iteration_results['first_infected_1'] == iteration_results['first_infected_2'] == set()
-
+# fixed_point = False
+# model.iteration()
+# old_count = None
+# while not fixed_point:
+#     first, second, iteration_results = model.iteration(node_status=True, first_infected=True)
+#     fixed_point = iteration_results['node_count'] == old_count
+#     old_count = iteration_results['node_count']
+first, second, results = model.simulation_run(True)
+# print(first, second)
+# print(old_count, iteration_results['node_count'])
 
 infected_both = []
 for u in G.nodes():

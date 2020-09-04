@@ -1,4 +1,3 @@
-import copy
 import csv
 from os.path import exists
 
@@ -22,18 +21,52 @@ def choose_seed(core, seed_size):
             seed_set_2.append(component[index])
         elif roll == 1:
             seed_set_1.append(component[index])
-	else:
+        else:
             raise ValueError("Not in the correct range")
     return seed_set_1, seed_set_2, seed_set_3
 
 
+def choose_nodes_by_degree(G, budget_1, budget_2, seed_set):
+    choices_1 = []
+    choices_2 = []
+    nodes_by_degree = sorted(G.degree(), key=lambda x: x[1], reverse=True)
+    index = 0
+    while len(choices_1) < budget_1:
+        if nodes_by_degree[index][0] not in seed_set:
+            choices_1.append(nodes_by_degree[index][0])
+        index += 1
+    index = 0
+    while len(choices_2) < budget_2:
+        if nodes_by_degree[index][0] not in seed_set:
+            choices_2.append(nodes_by_degree[index][0])
+        index += 1
+    return choices_1, choices_2
+
+
+def choose_randomly(G, budget_1, budget_2, seed_set):
+    nodes = list(G.nodes())
+    choices_1 = []
+    choices_2 = []
+    index = np.random.randint(0, len(nodes))
+    while len(choices_1) < budget_1:
+        if nodes[index] not in seed_set and nodes[index] not in choices_1:
+            choices_1.append(nodes[index][0])
+        index = np.random.randint(0, len(nodes))
+    index = np.random.randint(0, len(nodes))
+    while len(choices_2) < budget_2:
+        if nodes[index] not in seed_set and nodes[index] not in choices_2:
+            choices_2.append(nodes[index][0])
+        index = np.random.randint(0, len(nodes))
+    return choices_1, choices_2
+
+
 def main():
-    field_names = ['network_name', 'threshold', 'seed_size', 'budget_total'] + [
-        str(i) + "_no_block" for i in
-        range(4)] + [str(i) + "_cbh"
-                     for i in
-                     range(4)] + [
-                      str(i) + "_degree" for i in range(4)]
+    field_names = ['network_name', 'threshold', 'seed_size', 'budget_total']
+    # Add fields for node counts for each blocking method
+    for blocking in ["_no_block", "_cbh", "_degree", "_random"]:
+        field_names += [
+            str(i) + blocking for i in
+            range(4)]
     with open('complex_net_proposal/experiment_results/results.csv', 'w', newline='') as csv_fp:
         csv_writer = csv.writer(csv_fp, delimiter=',')
         csv_writer.writerow(field_names)
@@ -62,10 +95,10 @@ def main():
         # Select k-core
         k_core = list(nx.k_core(G, 20).nodes())
         for seed_size in [10, 20]:
-            # Initialize accumulators
-            # Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg, results_degree_avg))
+            # Initialize accumulators Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg,
+            # results_degree_avg, results_random))
             avgs = {
-                threshold: {int(budget * G.number_of_nodes()): tuple({state: 0 for state in range(4)} for i in range(3))
+                threshold: {int(budget * G.number_of_nodes()): tuple({state: 0 for state in range(4)} for i in range(4))
                             for budget in budgets} for threshold in
                 thresholds}
             for sample in range(sample_number):
@@ -78,9 +111,8 @@ def main():
                     for j in range(len(budgets)):
                         # Get the budget
                         budget = int(budgets[j] * G.number_of_nodes())
-                        network = copy.deepcopy(G)
                         # Configure model
-                        model = utils.config_model(network, threshold, seed_set_1, seed_set_2, seed_set_3)
+                        model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3)
                         node_infections_1, node_infections_2, results = model.simulation_run()
                         # Analyze node counts
                         infected_1 = results['node_count'][1] + results['node_count'][3]
@@ -88,62 +120,59 @@ def main():
                         total_infected = sum(results['node_count'][i] for i in range(1, 4))
                         # Select nodes appropriately
                         ratio_infected_1 = infected_1 / total_infected
-			budget_1 = int(ratio_infected_1 * budget)
-			budget_2 = budget - budget_1
+                        budget_1 = int(ratio_infected_1 * budget)
+                        budget_2 = budget - budget_1
                         # Run through the CBH from DMKD for both contagions.
                         choices_1 = cbh.try_all_sets(node_infections_1, budget_1, model, set(seed_set_1 + seed_set_3),
                                                      1)
+                        if len(choices_1) < budget_1:
+                            budget_2 += budget_1 - choices_1
                         choices_2 = cbh.try_all_sets(node_infections_2, budget_2, model, set(seed_set_2 + seed_set_3),
                                                      2)
-			# TODO: There is a situation in which one budget may not be used up. We should check if that is 
-			# the case and share that remainder.
-			# TODO: Think about the situation where we can block both at a certain time steps.
+                        if len(choices_2) < budget_2:
+                            choices_1 = cbh.try_all_sets(node_infections_1, budget_1 + (len(choices_2) - budget_2),
+                                                         model, set(seed_set_1 + seed_set_3),
+                                                         1)
+
+                        # TODO: Think about the situation where we can block both at a certain time steps.
 
                         # Run again with the CBH blocking
-                        network = copy.deepcopy(G)
-
                         # Configure model
-                        model = utils.config_model(network, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
+                        model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
-                        node_infections_1_blocked, node_infections_2_blocked, results_blocked = model.simulation_run()
+                        results_blocked = model.simulation_run(first_infected=False)
                         # Find high degree nodes
-                        network = copy.deepcopy(G)
-                        choices_1 = []
-                        choices_2 = []
-                        nodes_by_degree = sorted(G.degree(), key=lambda x: x[1], reverse=True)
-                        index = 0
-                        while len(choices_1) < budget_1:
-                            if nodes_by_degree[index][0] not in seed_set:
-                                choices_1.append(nodes_by_degree[index][0])
-                            index += 1
-                        index = 0
-                        while len(choices_2) < budget_2:
-                            if nodes_by_degree[index][0] not in seed_set:
-                                choices_2.append(nodes_by_degree[index][0])
-                            index += 1
-
+                        choices_1, choices_2 = choose_nodes_by_degree(G, budget_1, budget_2, seed_set)
                         # Run forward
-                        model = utils.config_model(network, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
+                        model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
-                        node_infections_1_blocked_degree, node_infections_2_blocked_degree, results_blocked_degree = model.simulation_run()
+                        results_blocked_degree = model.simulation_run(first_infected=False)
+                        # Find random nodes
+                        choices_1, choices_2 = choose_randomly(G, budget_1, budget_2, seed_set)
+                        # Run forward
+                        model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
+                                                   choices_2)
+                        results_random = model.simulation_run(first_infected=False)
                         for state in range(4):
                             avgs[threshold][budget][0][state] += results['node_count'][state]
                             avgs[threshold][budget][1][state] += results_blocked['node_count'][state]
                             avgs[threshold][budget][2][state] += results_blocked_degree['node_count'][state]
+                            avgs[threshold][budget][3][state] += results_random['node_count'][state]
             for threshold in thresholds:
                 for budget in budgets:
                     budget = int(budget * G.number_of_nodes())
-                    for accumulator in range(3):
+                    for accumulator in range(4):
                         for state in range(4):
                             avgs[threshold][budget][accumulator][state] /= sample_number
                     with open('complex_net_proposal/experiment_results/results.csv', 'a', newline='') as results_fp:
                         csv_writer = csv.writer(results_fp, delimiter=',')
                         # Write problem data
                         result_data = [net_name, str(threshold), str(seed_size),
-                                       str(budget)] + list(
-                            map(lambda x: str(x), avgs[threshold][budget][0].values())) + list(
-                            map(lambda x: str(x), avgs[threshold][budget][1].values())) + list(
-                            map(lambda x: str(x), avgs[threshold][budget][2].values()))
+                                       str(budget)]
+                        # Add in the averages
+                        for accumulator in range(4):
+                            result_data += list(
+                                map(lambda x: str(x), avgs[threshold][budget][accumulator].values()))
                         csv_writer.writerow(result_data)
 
 
