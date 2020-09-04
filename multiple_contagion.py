@@ -187,6 +187,6 @@ class multiple_contagions(DiffusionModel):
         while not fixed_point:
             results = self.iteration(node_status=True, first_infected=True)
             fixed_point = results['first_infected_1'] == results['first_infected_2'] == set()
-            updated_node_list_1.append(list(results['first_infected_1']))
-            updated_node_list_2.append(list(results['first_infected_2']))
+            updated_node_list_1.append(set(results['first_infected_1']))
+            updated_node_list_2.append(set(results['first_infected_2']))
         return updated_node_list_1[:-1], updated_node_list_2[:-1], results

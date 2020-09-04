@@ -61,7 +61,9 @@ def try_all_sets(node_infections, budget, model, seed_set, threshold_index=1):
     # Start iteration at i = 1 to find best nodes for contagion threshold_index
     min_unsatisfied = np.iinfo(np.int32).max
     best_solution = []
-    for i in range(len(node_infections) - 1):
+    iterations = max(1, len(node_infections) - 1)
+    for i in range(iterations):
+        available_to_block = node_infections[i].difference(seed_set)
         if len(node_infections[i]) <= budget:
             # If we can vaccinate all nodes at infected at this time step return that.
             return node_infections[i]
@@ -71,14 +73,13 @@ def try_all_sets(node_infections, budget, model, seed_set, threshold_index=1):
         requirement_array = {}
         # Construct subsets and unsatisfied array
         for u in node_infections[i]:
-            if u not in seed_set:
-                subset = set()
-                for v in model.graph.neighbors(u):
-                    if v in node_infections[i + 1]:
-                        subset.add(v)
-                        if v not in unsatisfied:
-                            unsatisfied.add(v)
-                subsets.append(subset)
+            subset = set()
+            for v in model.graph.neighbors(u):
+                if v in node_infections[i + 1]:
+                    subset.add(v)
+                    if v not in unsatisfied:
+                        unsatisfied.add(v)
+            subsets.append(subset)
         # Compute requirement values
         for unsat in unsatisfied:
             threshold = model.params['nodes']["threshold_" + str(threshold_index)][unsat]

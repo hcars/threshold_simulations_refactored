@@ -99,8 +99,10 @@ def main():
                             budget_2 = budget - budget_1
 
                         # Run through the CBH from DMKD for both contagions.
-                        choices_1 = cbh.try_all_sets(node_infections_1, budget_1, model, seed_set, 1)
-                        choices_2 = cbh.try_all_sets(node_infections_2, budget_2, model, seed_set, 2)
+                        choices_1 = cbh.try_all_sets(node_infections_1, budget_1, model, set(seed_set_1 + seed_set_3),
+                                                     1)
+                        choices_2 = cbh.try_all_sets(node_infections_2, budget_2, model, set(seed_set_2 + seed_set_3),
+                                                     2)
                         # Run again
                         network = copy.deepcopy(G)
 

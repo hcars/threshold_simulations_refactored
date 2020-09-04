@@ -61,6 +61,8 @@ class TestTryAll(unittest.TestCase):
     config.add_model_initial_configuration('Infected', [1, 2])
     config.add_model_parameter('interaction_1', 0)
     config.add_model_parameter('interaction_2', 0)
+    config.add_node_set_configuration('blocked_1', {u: False for u in G.nodes})
+    config.add_node_set_configuration('blocked_2', {u: False for u in G.nodes})
     model.set_initial_status(config)
     threshold_index = 1
 
@@ -87,6 +89,8 @@ class SimulationRun(unittest.TestCase):
     config = mc.Configuration()
     config.add_node_set_configuration('threshold_1', {1: 1, 2: 1, 3: 2, 4: 2})
     config.add_node_set_configuration('threshold_2', {u: 2 for u in G.nodes})
+    config.add_node_set_configuration('blocked_1', {u: False for u in G.nodes})
+    config.add_node_set_configuration('blocked_2', {u: False for u in G.nodes})
     config.add_model_initial_configuration('Infected', [1, 2])
     config.add_model_parameter('interaction_1', 0)
     config.add_model_parameter('interaction_2', 0)
@@ -95,8 +99,8 @@ class SimulationRun(unittest.TestCase):
     def test_run_simulation(self):
         results_1, results_2, results = self.model.simulation_run()
         assert len(results_1) == 1
-        assert results_1[0] == [3]
-        assert results_2[0] == []
+        assert results_1[0] == {3} or results_1[0] == [3]
+        assert results_2 == [set()]
 
 
 class CoverageHeuristic(unittest.TestCase):
@@ -110,12 +114,17 @@ class CoverageHeuristic(unittest.TestCase):
     config.add_model_initial_configuration('Infected', [1, 2])
     config.add_model_parameter('interaction_1', 0)
     config.add_model_parameter('interaction_2', 0)
+    config.add_node_set_configuration('blocked_1', {u: False for u in G.nodes})
+    config.add_node_set_configuration('blocked_2', {u: False for u in G.nodes})
     model.set_initial_status(config)
 
     def test_heuristic(self):
         choice_1, choice_2 = cbh.coverage_heuristic(2, 0, model=self.model)
-        assert choice_1 == [3]
-        assert choice_2 == []
+        assert (choice_1 == {3}) or (choice_1 == [3])
+        assert len(choice_2) == 0
+
+
+# def TestBlocking(unittest.TestCase):
 
 
 if __name__ == '__main__':
