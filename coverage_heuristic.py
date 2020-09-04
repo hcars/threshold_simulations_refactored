@@ -61,8 +61,8 @@ def try_all_sets(node_infections, budget, model, seed_set, threshold_index=1):
     # Start iteration at i = 1 to find best nodes for contagion threshold_index
     min_unsatisfied = np.iinfo(np.int32).max
     best_solution = []
-    iterations = max(1, len(node_infections) - 1)
-    for i in range(iterations):
+    #iterations = max(1, len(node_infections) - 1)
+    for i in range(len(node_infections) - 1):
         available_to_block = np.setdiff1d(node_infections[i], seed_set)
         if len(available_to_block) <= budget:
             # If we can vaccinate all nodes at infected at this time step return that.

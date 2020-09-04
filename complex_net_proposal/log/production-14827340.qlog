@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "compute_blocking.py", line 153, in <module>
+    main()
+  File "compute_blocking.py", line 124, in main
+    choices_2.append(nodes_by_degree[index][0])
+AttributeError: 'numpy.ndarray' object has no attribute 'append'

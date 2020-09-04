@@ -112,6 +112,8 @@ def main():
                         node_infections_1_blocked, node_infections_2_blocked, results_blocked = model.simulation_run()
                         # Find high degree nodes
                         network = copy.deepcopy(G)
+                        choices_1 = []
+                        choices_2 = []
                         nodes_by_degree = sorted(G.degree(), key=lambda x: x[1], reverse=True)
                         index = 0
                         while len(choices_1) < budget_1:

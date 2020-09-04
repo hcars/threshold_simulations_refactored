@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "compute_blocking.py", line 153, in <module>
+    main()
+  File "compute_blocking.py", line 102, in main
+    choices_1 = cbh.try_all_sets(node_infections_1, budget_1, model, set(seed_set_1 + seed_set_3),
+  File "/sfs/qumulo/qhome/hlc5v/threshold_simulations/coverage_heuristic.py", line 98, in try_all_sets
+    best_solution = [node_infections[i][index] for index in chosen]
+  File "/sfs/qumulo/qhome/hlc5v/threshold_simulations/coverage_heuristic.py", line 98, in <listcomp>
+    best_solution = [node_infections[i][index] for index in chosen]
+TypeError: 'set' object is not subscriptable

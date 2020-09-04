@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "compute_blocking.py", line 155, in <module>
+    main()
+  File "compute_blocking.py", line 102, in main
+    choices_1 = cbh.try_all_sets(node_infections_1, budget_1, model, set(seed_set_1 + seed_set_3),
+  File "/sfs/qumulo/qhome/hlc5v/threshold_simulations/coverage_heuristic.py", line 66, in try_all_sets
+    available_to_block = np.setdiff1d(node_infections[i], seed_set)
+IndexError: list index out of range
