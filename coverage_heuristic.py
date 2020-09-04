@@ -6,7 +6,7 @@ def greedy_smc(budget, collection_of_subsets, unsatisfied, requirement_array):
     This provides a ln|X| + 1 approximation to the set mutlicover problem with a budget constraint.
     :param unsatisfied: A list with all the unsatisfied elements
     :param budget: The number of sets that may be chosen.
-    :param collection_of_subsets: The collection of available subsets which is a list of sets.
+    :param collection_of_subsets: The collection of available subsets which is a list of lists.
     :param requirement_array: A dict containing the coverage requirement for each node.
     :return: A coverage, all of the sets that are chosen, and the unsatisfied set.
     """
@@ -35,6 +35,7 @@ def greedy_smc(budget, collection_of_subsets, unsatisfied, requirement_array):
             requirement_array[element] -= 1
             if requirement_array[element] == 0:
                 unsatisfied.remove(element)
+	# Check to see if unsatisfied is empty.
         if not unsatisfied:
             break
         i += 1
@@ -57,9 +58,11 @@ def coverage_heuristic(budget_1, budget_2, model):
     return choices_1, choices_2
 
 
-def try_all_sets(node_infections, budget, model, seed_set, threshold_index=1):
-    # Start iteration at i = 1 to find best nodes for contagion threshold_index
+def try_all_sets(node_infections, budget, model, seed_set, contagion_index=1):
+    # Start iteration at i = 1 to find best nodes for contagion contagion_index
+    # Int max
     min_unsatisfied = np.iinfo(np.int32).max
+    # Stores blocking node ids for contagion_index
     best_solution = []
     #iterations = max(1, len(node_infections) - 1)
     for i in range(len(node_infections) - 1):
@@ -70,7 +73,7 @@ def try_all_sets(node_infections, budget, model, seed_set, threshold_index=1):
         subsets = []
         unsatisfied = set()
         # Initialize requirement dict
-        requirement_array = {}
+        requirement_dict = {}
         # Construct subsets and unsatisfied array
         for u in available_to_block:
             subset = set()
@@ -82,12 +85,12 @@ def try_all_sets(node_infections, budget, model, seed_set, threshold_index=1):
             subsets.append(subset)
         # Compute requirement values
         for unsat in unsatisfied:
-            threshold = model.params['nodes']["threshold_" + str(threshold_index)][unsat]
+            threshold = model.params['nodes']["threshold_" + str(contagion_index)][unsat]
             # Find number of infected neighbors
-            number_affected = model.graph.nodes[unsat]['affected_' + str(threshold_index)]
-            requirement_array[unsat] = number_affected - threshold + 1
+            number_affected = model.graph.nodes[unsat]['affected_' + str(contagion_index)]
+            requirement_dict[unsat] = number_affected - threshold + 1
         # Find the cover approximation
-        cover_approximation, chosen, unsatisfied_return = greedy_smc(budget, subsets, unsatisfied, requirement_array)
+        cover_approximation, chosen, unsatisfied_return = greedy_smc(budget, subsets, unsatisfied, requirement_dict)
         if not unsatisfied_return:
             # If we have found an adequate cover, return that.
             return [available_to_block[index] for index in chosen]

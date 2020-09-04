@@ -22,6 +22,8 @@ def choose_seed(core, seed_size):
             seed_set_2.append(component[index])
         elif roll == 1:
             seed_set_1.append(component[index])
+	else:
+            raise ValueError("Not in the correct range")
     return seed_set_1, seed_set_2, seed_set_3
 
 
@@ -57,8 +59,8 @@ def main():
         for node in G.nodes:
             G.nodes[node]['affected_1'] = 0
             G.nodes[node]['affected_2'] = 0
-        # Select seed set
-        k_core = nx.k_core(G, 20)
+        # Select k-core
+        k_core = list(nx.k_core(G, 20).nodes())
         for seed_size in [10, 20]:
             # Initialize accumulators
             # Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg, results_degree_avg))
@@ -68,7 +70,7 @@ def main():
                 thresholds}
             for sample in range(sample_number):
                 # Choose seed set
-                seed_set_1, seed_set_2, seed_set_3 = choose_seed(list(k_core.nodes()), seed_size)
+                seed_set_1, seed_set_2, seed_set_3 = choose_seed(k_core, seed_size)
                 seed_set = set(seed_set_1 + seed_set_2 + seed_set_3)
                 for k in range(len(thresholds)):
                     # Pull out threshold
@@ -85,25 +87,19 @@ def main():
                         infected_2 = results['node_count'][2] + results['node_count'][3]
                         total_infected = sum(results['node_count'][i] for i in range(1, 4))
                         # Select nodes appropriately
-                        # Select nodes appropriately
-                        if infected_1 > infected_2:
-                            ratio_total = infected_1 / total_infected
-                            budget_1 = np.ceil(ratio_total * budget)
-                            budget_2 = budget - budget_1
-                        elif infected_1 < infected_2:
-                            ratio_total = infected_2 / total_infected
-                            budget_2 = np.ceil(ratio_total * budget)
-                            budget_1 = budget - budget_2
-                        else:
-                            budget_1 = budget // 2
-                            budget_2 = budget - budget_1
-
+                        ratio_infected_1 = infected_1 / total_infected
+			budget_1 = int(ratio_infected_1 * budget)
+			budget_2 = budget - budget_1
                         # Run through the CBH from DMKD for both contagions.
                         choices_1 = cbh.try_all_sets(node_infections_1, budget_1, model, set(seed_set_1 + seed_set_3),
                                                      1)
                         choices_2 = cbh.try_all_sets(node_infections_2, budget_2, model, set(seed_set_2 + seed_set_3),
                                                      2)
-                        # Run again
+			# TODO: There is a situation in which one budget may not be used up. We should check if that is 
+			# the case and share that remainder.
+			# TODO: Think about the situation where we can block both at a certain time steps.
+
+                        # Run again with the CBH blocking
                         network = copy.deepcopy(G)
 
                         # Configure model
