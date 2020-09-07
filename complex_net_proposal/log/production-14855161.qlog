@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "compute_blocking.py", line 180, in <module>
+    main()
+  File "compute_blocking.py", line 129, in main
+    budget_2 += budget_1 - choices_1
+TypeError: unsupported operand type(s) for -: 'int' and 'list'

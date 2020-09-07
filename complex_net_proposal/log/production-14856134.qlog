@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "compute_blocking.py", line 180, in <module>
+    main()
+  File "compute_blocking.py", line 151, in main
+    choices_1, choices_2 = choose_randomly(G, budget_1, budget_2, seed_set)
+  File "compute_blocking.py", line 53, in choose_randomly
+    choices_1.append(nodes[index][0])
+TypeError: 'int' object is not subscriptable

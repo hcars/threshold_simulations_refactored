@@ -50,12 +50,12 @@ def choose_randomly(G, budget_1, budget_2, seed_set):
     index = np.random.randint(0, len(nodes))
     while len(choices_1) < budget_1:
         if nodes[index] not in seed_set and nodes[index] not in choices_1:
-            choices_1.append(nodes[index][0])
+            choices_1.append(nodes[index])
         index = np.random.randint(0, len(nodes))
     index = np.random.randint(0, len(nodes))
     while len(choices_2) < budget_2:
         if nodes[index] not in seed_set and nodes[index] not in choices_2:
-            choices_2.append(nodes[index][0])
+            choices_2.append(nodes[index])
         index = np.random.randint(0, len(nodes))
     return choices_1, choices_2
 
@@ -126,11 +126,11 @@ def main():
                         choices_1 = cbh.try_all_sets(node_infections_1, budget_1, model, set(seed_set_1 + seed_set_3),
                                                      1)
                         if len(choices_1) < budget_1:
-                            budget_2 += budget_1 - choices_1
+                            budget_2 += budget_1 - len(choices_1)
                         choices_2 = cbh.try_all_sets(node_infections_2, budget_2, model, set(seed_set_2 + seed_set_3),
                                                      2)
                         if len(choices_2) < budget_2:
-                            choices_1 = cbh.try_all_sets(node_infections_1, budget_1 + (len(choices_2) - budget_2),
+                            choices_1 = cbh.try_all_sets(node_infections_1, budget_1 + (budget_2 - len(choices_2)),
                                                          model, set(seed_set_1 + seed_set_3),
                                                          1)
 
