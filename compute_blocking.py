@@ -67,9 +67,9 @@ def main():
         field_names += [
             str(i) + blocking for i in
             range(4)]
-    with open('complex_net_proposal/experiment_results/results.csv', 'w', newline='') as csv_fp:
-        csv_writer = csv.writer(csv_fp, delimiter=',')
-        csv_writer.writerow(field_names)
+    # with open('complex_net_proposal/experiment_results/results.csv', 'w', newline='') as csv_fp:
+    #     csv_writer = csv.writer(csv_fp, delimiter=',')
+    #     csv_writer.writerow(field_names)
     # Load in networks
     network_folder = "complex_net_proposal/experiment_networks/"
     # Constants
@@ -94,7 +94,7 @@ def main():
             G.nodes[node]['affected_2'] = 0
         # Select k-core
         k_core = list(nx.k_core(G, 20).nodes())
-        for seed_size in [10, 20]:
+        for seed_size in [50, 100, 200]:
             # Initialize accumulators Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg,
             # results_degree_avg, results_random))
             avgs = {
