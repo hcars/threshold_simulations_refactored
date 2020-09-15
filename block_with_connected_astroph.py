@@ -98,7 +98,9 @@ def main():
         while len(connected_core) <= 220:
             index_to_expand = np.random.randint(0, len(connected_core))
             choose_from = list(nx.neighbors(G, connected_core[index_to_expand]))
-            connected_core.append(choose_from[np.random.randint(0, len(choose_from))])
+            choice = choose_from[np.random.randint(0, len(choose_from))]
+            if choice not in connected_core:
+                connected_core.append(choice)
         for seed_size in [10, 20]:
             # Initialize accumulators Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg,
             # results_degree_avg, results_random))
