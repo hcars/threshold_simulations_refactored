@@ -95,13 +95,13 @@ def main():
         # Select k-core
         k_core = list(nx.k_core(G, 20).nodes())[0]
         connected_core = [k_core]
-        while len(connected_core) <= 220:
+        while len(connected_core) < 200:
             index_to_expand = np.random.randint(0, len(connected_core))
             choose_from = list(nx.neighbors(G, connected_core[index_to_expand]))
             choice = choose_from[np.random.randint(0, len(choose_from))]
             if choice not in connected_core:
                 connected_core.append(choice)
-        for seed_size in [10, 20]:
+        for seed_size in [20]:
             # Initialize accumulators Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg,
             # results_degree_avg, results_random))
             avgs = {
@@ -110,7 +110,7 @@ def main():
                 thresholds}
             for sample in range(sample_number):
                 # Choose seed set
-                seed_set_1, seed_set_2, seed_set_3 = choose_seed(k_core, seed_size)
+                seed_set_1, seed_set_2, seed_set_3 = choose_seed(connected_core, seed_size)
                 seed_set = set(seed_set_1 + seed_set_2 + seed_set_3)
                 for k in range(len(thresholds)):
                     # Pull out threshold
