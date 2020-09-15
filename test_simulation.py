@@ -53,14 +53,15 @@ model.set_initial_status(config)
 #     fixed_point = iteration_results['node_count'] == old_count
 #     old_count = iteration_results['node_count']
 first, second, results = model.simulation_run(True)
+print(results['status_delta'])
 # print(first, second)
 # print(old_count, iteration_results['node_count'])
 
 infected_both = []
-for u in G.nodes():
-    if model.status[u] == 3:
-        infected_both.append(u)
-
-sub = nx.subgraph(G, infected_both)
-
-print(len(list(nx.connected_components(sub))[0]))
+# for u in G.nodes():
+#     if model.status[u] == 3:
+#         infected_both.append(u)
+#
+# sub = nx.subgraph(G, infected_both)
+#
+# print(len(list(nx.connected_components(sub))[0]))

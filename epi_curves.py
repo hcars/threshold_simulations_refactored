@@ -60,24 +60,41 @@ def choose_randomly(G, budget_1, budget_2, seed_set):
     return choices_1, choices_2
 
 
+def write_delta(model, epi_file, blocking, threshold):
+    fixed_point = False
+    results = None
+    model.iteration()
+    old_count = None
+    while not fixed_point:
+        results = model.iteration(node_status=True, first_infected=False)
+        fixed_point = results['node_count'] == old_count
+        with open(epi_file, 'a', newline='') as epi_fp:
+            epi_write = csv.writer(epi_fp)
+            epi_write.writerow(
+                [str(model.actual_iteration), threshold, blocking] + list(
+                    map(lambda x: str(x), results['status_delta'].values())))
+        old_count = results['node_count']
+
+
 def main():
-    field_names = ['network_name', 'threshold', 'seed_size', 'budget_total']
+    field_names = ['time', 'threshold', 'blocking'] + ['state_' + str(i) for i in range(4)]
     # Add fields for node counts for each blocking method
-    for blocking in ["_no_block", "_cbh", "_degree", "_random"]:
-        field_names += [
-            str(i) + blocking for i in
-            range(4)]
-    # with open('complex_net_proposal/experiment_results/results.csv', 'w', newline='') as csv_fp:
-    #     csv_writer = csv.writer(csv_fp, delimiter=',')
-    #     csv_writer.writerow(field_names)
+    # for blocking in ["_no_block", "_cbh", "_degree", "_random"]:
+    #     field_names += [
+    #         str(i) + blocking for i in
+    #         range(4)]
+    epi_file = 'complex_net_proposal/experiment_results/epi_curve_results.csv'
+    with open(epi_file, 'w', newline='') as csv_fp:
+        csv_writer = csv.writer(csv_fp, delimiter=',')
+        csv_writer.writerow(field_names)
     # Load in networks
     network_folder = "complex_net_proposal/experiment_networks/"
     # Constants for stochastic portion do not change
     seeds = (6893, 20591, 20653)
-    net_names = ["fb-pages-politician", "astroph", "wiki"]
+    net_names = ["fb-pages-politician"]
     thresholds = (2, 3, 4)
-    budgets = [.005] + [.01 + i * .01 for i in range(12)]
-    sample_number = 10
+    budgets = [.02]
+    sample_number = 100
 
     for i in range(len(net_names)):
         np.random.seed(seeds[i])
@@ -94,13 +111,10 @@ def main():
             G.nodes[node]['affected_2'] = 0
         # Select k-core
         k_core = list(nx.k_core(G, 20).nodes())
-        for seed_size in [10, 20]:
+        for seed_size in [20]:
             # Initialize accumulators Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg,
             # results_degree_avg, results_random))
-            avgs = {
-                threshold: {int(budget * G.number_of_nodes()): tuple({state: 0 for state in range(4)} for i in range(4))
-                            for budget in budgets} for threshold in
-                thresholds}
+
             for sample in range(sample_number):
                 # Choose seed set
                 seed_set_1, seed_set_2, seed_set_3 = choose_seed(k_core, seed_size)
@@ -114,9 +128,10 @@ def main():
                         # Configure model
                         model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3)
                         node_infections_1, node_infections_2, results = model.simulation_run()
+                        model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3)
+                        write_delta(model, epi_file, 'no_block', threshold)
                         # Analyze node counts
                         infected_1 = results['node_count'][1] + results['node_count'][3]
-                        infected_2 = results['node_count'][2] + results['node_count'][3]
                         total_infected = sum(results['node_count'][i] for i in range(1, 4))
                         # Select nodes appropriately
                         ratio_infected_1 = infected_1 / total_infected
@@ -140,40 +155,19 @@ def main():
                         # Configure model
                         model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
-                        results_blocked = model.simulation_run(first_infected=False)
+                        write_delta(model, epi_file, 'mcich', threshold)
                         # Find high degree nodes
                         choices_1, choices_2 = choose_nodes_by_degree(G, budget_1, budget_2, seed_set)
                         # Run forward
                         model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
-                        results_blocked_degree = model.simulation_run(first_infected=False)
+                        write_delta(model, epi_file, 'degree', threshold)
                         # Find random nodes
                         choices_1, choices_2 = choose_randomly(G, budget_1, budget_2, seed_set)
                         # Run forward
                         model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
-                        results_random = model.simulation_run(first_infected=False)
-                        for state in range(4):
-                            avgs[threshold][budget][0][state] += results['node_count'][state]
-                            avgs[threshold][budget][1][state] += results_blocked['node_count'][state]
-                            avgs[threshold][budget][2][state] += results_blocked_degree['node_count'][state]
-                            avgs[threshold][budget][3][state] += results_random['node_count'][state]
-            for threshold in thresholds:
-                for budget in budgets:
-                    budget = int(budget * G.number_of_nodes())
-                    for accumulator in range(4):
-                        for state in range(4):
-                            avgs[threshold][budget][accumulator][state] /= sample_number
-                    with open('complex_net_proposal/experiment_results/results.csv', 'a', newline='') as results_fp:
-                        csv_writer = csv.writer(results_fp, delimiter=',')
-                        # Write problem data
-                        result_data = [net_name, str(threshold), str(seed_size),
-                                       str(budget)]
-                        # Add in the averages
-                        for accumulator in range(4):
-                            result_data += list(
-                                map(lambda x: str(x), avgs[threshold][budget][accumulator].values()))
-                        csv_writer.writerow(result_data)
+                        write_delta(model, epi_file, 'random', threshold)
 
 
 if __name__ == '__main__':

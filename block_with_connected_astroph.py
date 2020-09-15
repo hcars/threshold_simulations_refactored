@@ -67,14 +67,14 @@ def main():
         field_names += [
             str(i) + blocking for i in
             range(4)]
-    # with open('complex_net_proposal/experiment_results/results.csv', 'w', newline='') as csv_fp:
-    #     csv_writer = csv.writer(csv_fp, delimiter=',')
-    #     csv_writer.writerow(field_names)
+    with open('complex_net_proposal/experiment_results/astroph_results.csv', 'w', newline='') as csv_fp:
+        csv_writer = csv.writer(csv_fp, delimiter=',')
+        csv_writer.writerow(field_names)
     # Load in networks
     network_folder = "complex_net_proposal/experiment_networks/"
     # Constants for stochastic portion do not change
     seeds = (6893, 20591, 20653)
-    net_names = ["fb-pages-politician", "astroph", "wiki"]
+    net_names = ["astroph"]
     thresholds = (2, 3, 4)
     budgets = [.005] + [.01 + i * .01 for i in range(12)]
     sample_number = 10
@@ -93,7 +93,12 @@ def main():
             G.nodes[node]['affected_1'] = 0
             G.nodes[node]['affected_2'] = 0
         # Select k-core
-        k_core = list(nx.k_core(G, 20).nodes())
+        k_core = list(nx.k_core(G, 20).nodes())[0]
+        connected_core = [k_core]
+        while len(connected_core) <= 220:
+            index_to_expand = np.random.randint(0, len(connected_core))
+            choose_from = list(nx.neighbors(G, connected_core[index_to_expand]))
+            connected_core.append(choose_from[np.random.randint(0, len(choose_from))])
         for seed_size in [10, 20]:
             # Initialize accumulators Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg,
             # results_degree_avg, results_random))
@@ -164,7 +169,7 @@ def main():
                     for accumulator in range(4):
                         for state in range(4):
                             avgs[threshold][budget][accumulator][state] /= sample_number
-                    with open('complex_net_proposal/experiment_results/results.csv', 'a', newline='') as results_fp:
+                    with open('complex_net_proposal/experiment_results/astroph_results.csv', 'a', newline='') as results_fp:
                         csv_writer = csv.writer(results_fp, delimiter=',')
                         # Write problem data
                         result_data = [net_name, str(threshold), str(seed_size),
