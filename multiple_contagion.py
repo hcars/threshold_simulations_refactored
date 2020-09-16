@@ -68,11 +68,12 @@ class multiple_contagions(DiffusionModel):
         """
         infected_counts = np.zeros(shape=(2,))
         for v in self.graph.neighbors(u):
-            if self.status[v] == 1:
+            v_status = self.status[v]
+            if v_status == 1:
                 infected_counts[0] += 1
-            elif self.status[v] == 2:
+            elif v_status == 2:
                 infected_counts[1] += 1
-            elif self.status[v] == 3:
+            elif v_status == 3:
                 infected_counts[0] += 1
                 infected_counts[1] += 1
         return infected_counts
@@ -107,7 +108,7 @@ class multiple_contagions(DiffusionModel):
                 # Retrieve the thresholds for both contagions.
                 threshold_1 = self.params['nodes']["threshold_1"][u]
                 threshold_2 = self.params['nodes']["threshold_1"][u]
-
+                # Update with interaction term
                 threshold_1 += int(threshold_1 * self.params['model']["interaction_1"])
                 threshold_2 += int(threshold_2 * self.params['model']["interaction_2"])
                 # Count nodes infected with different contagions
@@ -132,7 +133,7 @@ class multiple_contagions(DiffusionModel):
                 elif u_status == 1:
                     # Counts the infected status of neighbors, updates the threshold based on the interaction, and
                     # updates node state appropriately.
-                    if transition_2 == 2:
+                    if transition_2:
                         actual_status[u] = 3
                         if first_infected:
                             first_infected_2.add(u)
@@ -140,7 +141,7 @@ class multiple_contagions(DiffusionModel):
                 elif u_status == 2:
                     # Counts the infected status of neighbors, updates the threshold based on the interaction, and
                     # updates node state appropriately.
-                    if transition_1 == 1:
+                    if transition_1:
                         actual_status[u] = 3
                         if first_infected:
                             first_infected_1.add(u)
