@@ -1,6 +1,6 @@
 import numpy as np
 from ndlib.models.DiffusionModel import DiffusionModel
-
+from cython.parallel import prange
 
 class multiple_contagions(DiffusionModel):
 
@@ -60,6 +60,23 @@ class multiple_contagions(DiffusionModel):
             "edges": {}
         }
 
+    def get_activated_neighbors(self, u):
+        """
+        Find the number of neighbors infected with each contagion
+        :param u: The node whose neighbors you would like to check.
+        :return: An array with the counts.
+        """
+        infected_counts = np.zeros(shape=(2,))
+        for v in self.graph.neighbors(u):
+            if self.status[v] == 1:
+                infected_counts[0] += 1
+            elif self.status[v] == 2:
+                infected_counts[1] += 1
+            elif self.status[v] == 3:
+                infected_counts[0] += 1
+                infected_counts[1] += 1
+        return infected_counts
+
     def iteration(self, node_status=True, first_infected=True):
 
         self.clean_initial_status(self.available_statuses.values())
@@ -89,77 +106,49 @@ class multiple_contagions(DiffusionModel):
             else:
                 # Retrieve the thresholds for both contagions.
                 threshold_1 = self.params['nodes']["threshold_1"][u]
-                threshold_2 = self.params['nodes']["threshold_2"][u]
+                threshold_2 = self.params['nodes']["threshold_1"][u]
+
+                threshold_1 += int(threshold_1 * self.params['model']["interaction_1"])
+                threshold_2 += int(threshold_2 * self.params['model']["interaction_2"])
+                # Count nodes infected with different contagions
+                cnts = self.get_activated_neighbors(u)
+                satisfied_1 = threshold_1 <= cnts[0]
+                satisfied_2 = threshold_2 <= cnts[1]
+                # Counts the infected status of neighbors and updates appropriately.
+                transition_1 = int(satisfied_1 and not self.params['nodes']['blocked_1'][u])
+                transition_2 = (int(satisfied_2 and not self.params['nodes']['blocked_2'][u]) * 2)
+
                 if u_status == 0:
-                    # Counts the infected status of neighbors and updates appropriately.
-                    cnt_infected = 0
-                    cnt_infected_2 = 0
-                    for v in self.graph.neighbors(u):
-                        if self.status[v] == 1:
-                            cnt_infected += 1
-                        elif self.status[v] == 2:
-                            cnt_infected_2 += 1
-                        elif self.status[v] == 3:
-                            cnt_infected += 1
-                            cnt_infected_2 += 1
-                    satisfied_1 = threshold_1 <= cnt_infected
-                    satisfied_2 = threshold_2 <= cnt_infected_2
-                    if satisfied_1 and satisfied_2 and not (
-                            self.params['nodes']['blocked_1'][u] or self.params['nodes']['blocked_2'][u]):
-                        actual_status[u] = 3
-                        if first_infected:
+                    total_satisfied = transition_1 + transition_2
+                    # Set status based off sum of transition
+                    actual_status[u] = total_satisfied
+                    if first_infected:
+                        if transition_1:
                             first_infected_1.add(u)
+                            self.graph.nodes[u]['affected_1'] = cnts[0]
+                        if transition_2:
                             first_infected_2.add(u)
-                            self.graph.nodes[u]['affected_1'] = cnt_infected
-                            self.graph.nodes[u]['affected_2'] = cnt_infected_2
-                    elif satisfied_1 and not self.params['nodes']['blocked_1'][u]:
-                        actual_status[u] = 1
-                        if first_infected:
-                            first_infected_1.add(u)
-                            self.graph.nodes[u]['affected_1'] = cnt_infected
-                    elif satisfied_2 and not self.params['nodes']['blocked_2'][u]:
-                        actual_status[u] = 2
-                        if first_infected:
-                            first_infected_2.add(u)
-                            self.graph.nodes[u]['affected_2'] = cnt_infected_2
+                            self.graph.nodes[u]['affected_2'] = cnts[1]
                 elif u_status == 1:
-                    if self.params['nodes']['blocked_2'][u]:
-                        continue
                     # Counts the infected status of neighbors, updates the threshold based on the interaction, and
                     # updates node state appropriately.
-                    threshold_2 += int(threshold_2 * self.params['model']["interaction_1"])
-                    cnt_infected_2 = 0
-                    for v in self.graph.neighbors(u):
-                        if self.status[v] == 2:
-                            cnt_infected_2 += 1
-                        elif self.status[v] == 3:
-                            cnt_infected_2 += 1
-                    if threshold_2 <= cnt_infected_2:
+                    if transition_2 == 2:
                         actual_status[u] = 3
                         if first_infected:
                             first_infected_2.add(u)
-                            self.graph.nodes[u]['affected_2'] = cnt_infected_2
+                            self.graph.nodes[u]['affected_2'] = cnts[1]
                 elif u_status == 2:
-                    if self.params['nodes']['blocked_1'][u]:
-                        continue
                     # Counts the infected status of neighbors, updates the threshold based on the interaction, and
                     # updates node state appropriately.
-                    threshold_1 += int(threshold_1 * self.params['model']["interaction_2"])
-                    cnt_infected = 0
-                    for v in self.graph.neighbors(u):
-                        if self.status[v] == 1:
-                            cnt_infected += 1
-                        elif self.status[v] == 3:
-                            cnt_infected += 1
-                    if threshold_1 <= cnt_infected:
+                    if transition_1 == 1:
                         actual_status[u] = 3
                         if first_infected:
                             first_infected_1.add(u)
-                            self.graph.nodes[u]['affected_1'] = cnt_infected
+                            self.graph.nodes[u]['affected_1'] = cnts[0]
 
         # identify the changes w.r.t. previous iteration
         delta, node_count, status_delta = self.status_delta(actual_status)
-
+        # print(delta)
         # update the actual status and iterative step
         self.status = actual_status
         self.actual_iteration += 1
