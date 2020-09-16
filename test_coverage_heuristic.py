@@ -54,7 +54,7 @@ class TestTryAll(unittest.TestCase):
     G.add_edges_from([(5, 12), (5, 10), (5, 13)])
     for node in [i for i in range(1, 14)]:
         G.nodes[node]['affected_1'] = 3
-    model = multiple_contagion.multiple_contagions(G)
+    model = multiple_contagion.MultipleContagionThreshold(G)
     config = mc.Configuration()
     config.add_node_set_configuration('threshold_1', {u: 2 for u in G.nodes})
     config.add_node_set_configuration('threshold_2', {u: 2 for u in G.nodes})
@@ -67,25 +67,25 @@ class TestTryAll(unittest.TestCase):
     threshold_index = 1
 
     def test_try_all_1(self):
-        solution = cbh.try_all_sets(self.node_infections, 4, self.model, 1)
-        assert solution == [1, 2, 3, 4]
+        solution = cbh.try_all_sets(self.node_infections, 4, self.model, seed_set=set(), contagion_index=1)
+        assert list(solution) == [1, 2, 3, 4]
 
     def test_try_all_2(self):
         self.node_infections[0] = [1, 2, 3, 4, 10, 11, 12, 13]
-        solution = cbh.try_all_sets(self.node_infections, 2, self.model, 1)
-        assert solution == [1, 2]
+        solution = cbh.try_all_sets(self.node_infections, 2, self.model, seed_set=set(), contagion_index=1)
+        assert list(solution) == [1, 2]
 
     def test_try_all_3(self):
         self.node_infections[0] = [1, 2, 3, 4, 10, 11, 12, 13]
-        solution = cbh.try_all_sets(self.node_infections, 1, self.model, 1)
-        assert solution == [1]
+        solution = cbh.try_all_sets(self.node_infections, 1, self.model, seed_set=set(), contagion_index=1)
+        assert list(solution) == [1]
 
 
 class SimulationRun(unittest.TestCase):
     G = nx.Graph()
     G.add_nodes_from([1, 2, 3, 4])
     G.add_edges_from([(1, 3), (2, 4), (2, 3)])
-    model = multiple_contagion.multiple_contagions(G)
+    model = multiple_contagion.MultipleContagionThreshold(G)
     config = mc.Configuration()
     config.add_node_set_configuration('threshold_1', {1: 1, 2: 1, 3: 2, 4: 2})
     config.add_node_set_configuration('threshold_2', {u: 2 for u in G.nodes})
@@ -97,17 +97,17 @@ class SimulationRun(unittest.TestCase):
     model.set_initial_status(config)
 
     def test_run_simulation(self):
-        results_1, results_2, results = self.model.simulation_run()
-        assert len(results_1) == 1
-        assert results_1[0] == {3} or results_1[0] == [3]
-        assert results_2 == [set()]
+        results_1 = self.model.simulation_run()
+        assert len(results_1[0]) == 1
+        assert results_1[0][0] == {3} or results_1[0][0] == [3]
+        assert results_1[1][0] == []
 
 
 class CoverageHeuristic(unittest.TestCase):
     G = nx.Graph()
     G.add_nodes_from([1, 2, 3, 4])
     G.add_edges_from([(1, 3), (2, 4), (2, 3)])
-    model = multiple_contagion.multiple_contagions(G)
+    model = multiple_contagion.MultipleContagionThreshold(G)
     config = mc.Configuration()
     config.add_node_set_configuration('threshold_1', {1: 1, 2: 1, 3: 1, 4: 2})
     config.add_node_set_configuration('threshold_2', {u: 2 for u in G.nodes})
@@ -119,7 +119,7 @@ class CoverageHeuristic(unittest.TestCase):
     model.set_initial_status(config)
 
     def test_heuristic(self):
-        choice_1, choice_2 = cbh.coverage_heuristic(2, 0, model=self.model)
+        choice_1, choice_2 = cbh.coverage_heuristic(2, 1, model=self.model)
         assert (choice_1 == {3}) or (choice_1 == [3])
         assert len(choice_2) == 0
 

@@ -1,10 +1,11 @@
 import networkx as nx
 import numpy as np
-from multiple_contagion import multiple_contagions
+from multiple_contagion import MultipleContagionThreshold
+import time
 np.random.seed(12324)
 # Network Definition
-G = nx.barabasi_albert_graph(1000, 25)
-model = multiple_contagions(G)
+G = nx.barabasi_albert_graph(10000, 50)
+model = MultipleContagionThreshold(G)
 
 import ndlib.models.ModelConfig as mc
 
@@ -36,7 +37,7 @@ def choose_seed(core, seed_size):
     return seed_set_1, seed_set_2, seed_set_3
 
 k_core = nx.k_core(G, 20)
-seed_set_1, seed_set_2, seed_set_3 = choose_seed(k_core, 20)
+seed_set_1, seed_set_2, seed_set_3 = choose_seed(k_core, 100)
 
 config.add_model_initial_configuration('Infected', seed_set_1)
 config.add_model_initial_configuration('Infected_2', seed_set_2)
@@ -44,19 +45,17 @@ config.add_model_initial_configuration('Infected_Both', seed_set_3)
 
 
 model.set_initial_status(config)
-
-# fixed_point = False
-# model.iteration()
-# old_count = None
-# while not fixed_point:
-#     first, second, iteration_results = model.iteration(node_status=True, first_infected=True)
-#     fixed_point = iteration_results['node_count'] == old_count
-#     old_count = iteration_results['node_count']
-first, second, results = model.simulation_run(True)
-print(results['status_delta'])
+now = time.time()
+fixed_point = False
+model.iteration()
+old_count = None
+while not fixed_point:
+    iteration_results = model.iteration(node_status=True, first_infected=True)
+    fixed_point = iteration_results['node_count'] == old_count
+    old_count = iteration_results['node_count']
+# first, second, results = model.simulation_run(True)
+# print(results['status_delta'])
 # print(first, second)
-# print(old_count, iteration_results['node_count'])
-
 infected_both = []
 # for u in G.nodes():
 #     if model.status[u] == 3:

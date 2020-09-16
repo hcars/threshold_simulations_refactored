@@ -1,23 +1,15 @@
 import ndlib.models.ModelConfig as mc
 
-from multiple_contagion import multiple_contagions
+from multiple_contagion import MultipleContagionThreshold
 
 
-def config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3=None, blocked_1=None, blocked_2=None):
-    model = multiple_contagions(G)
+def config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3=None, blocked_1=[], blocked_2=[]):
+    model = MultipleContagionThreshold(G)
+    for node in blocked_1:
+        model.graph.remove_edges(node, model.graph.neighbors(node))
+    for node in blocked_2:
+        model.graph.remove_edges(node, model.graph.neighbors(node))
     config = mc.Configuration()
-    if blocked_1 is None:
-        for node in G.nodes:
-            config.add_node_configuration('blocked_1', node, False)
-    else:
-        for node in G.nodes:
-            config.add_node_configuration('blocked_1', node, node in blocked_1)
-    if blocked_2 is None:
-        for node in G.nodes:
-            config.add_node_configuration('blocked_2', node, False)
-    else:
-        for node in G.nodes:
-            config.add_node_configuration('blocked_2', node, node in blocked_2)
     # No interaction
     config.add_model_parameter('interaction_1', 0)
     config.add_model_parameter('interaction_2', 0)

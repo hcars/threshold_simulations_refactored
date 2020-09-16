@@ -1,8 +1,8 @@
 import numpy as np
 from ndlib.models.DiffusionModel import DiffusionModel
-from cython.parallel import prange
 
-class multiple_contagions(DiffusionModel):
+
+class MultipleContagionThreshold(DiffusionModel):
 
     def __init__(self, graph):
         # Call the super class constructor
@@ -42,18 +42,6 @@ class multiple_contagions(DiffusionModel):
                     "descr": "The threshold for infection with contagion 2.",
                     "range": [0, np.iinfo(np.uint32).max],
                     "optional": True
-                },
-                "blocked_1": {
-                    "descr": "Blocked for contagion 1.",
-                    "range": [False, True],
-                    "optional": False,
-                    "default": False
-                },
-                "blocked_2": {
-                    "descr": "Blocked for contagion 2.",
-                    "range": [False, True],
-                    "optional": False,
-                    "default": False
                 },
 
             },
@@ -116,8 +104,8 @@ class multiple_contagions(DiffusionModel):
                 satisfied_1 = threshold_1 <= cnts[0]
                 satisfied_2 = threshold_2 <= cnts[1]
                 # Counts the infected status of neighbors and updates appropriately.
-                transition_1 = int(satisfied_1 and not self.params['nodes']['blocked_1'][u])
-                transition_2 = (int(satisfied_2 and not self.params['nodes']['blocked_2'][u]) * 2)
+                transition_1 = int(satisfied_1)
+                transition_2 = (int(satisfied_2) * 2)
 
                 if u_status == 0:
                     total_satisfied = transition_1 + transition_2

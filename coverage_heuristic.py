@@ -35,7 +35,7 @@ def greedy_smc(budget, collection_of_subsets, unsatisfied, requirement_array):
             requirement_array[element] -= 1
             if requirement_array[element] == 0:
                 unsatisfied.remove(element)
-	# Check to see if unsatisfied is empty.
+        # Check to see if unsatisfied is empty.
         if not unsatisfied:
             break
         i += 1
@@ -64,7 +64,7 @@ def try_all_sets(node_infections, budget, model, seed_set, contagion_index=1):
     min_unsatisfied = np.iinfo(np.int32).max
     # Stores blocking node ids for contagion_index
     best_solution = []
-    #iterations = max(1, len(node_infections) - 1)
+    # iterations = max(1, len(node_infections) - 1)
     for i in range(len(node_infections) - 1):
         available_to_block = np.setdiff1d(node_infections[i], seed_set)
         if len(available_to_block) <= budget:
