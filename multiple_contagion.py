@@ -108,9 +108,8 @@ class MultipleContagionThreshold(DiffusionModel):
                 transition_2 = (int(satisfied_2) * 2)
 
                 if u_status == 0:
-                    total_satisfied = transition_1 + transition_2
                     # Set status based off sum of transition
-                    actual_status[u] = total_satisfied
+                    actual_status[u] = transition_1 + transition_2
                     if first_infected:
                         if transition_1:
                             first_infected_1.add(u)

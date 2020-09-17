@@ -1,5 +1,6 @@
 import numpy as np
-
+import gurobipy as gp
+from gurobipy import GRB
 
 def greedy_smc(budget, collection_of_subsets, unsatisfied, requirement_array):
     """
@@ -42,6 +43,31 @@ def greedy_smc(budget, collection_of_subsets, unsatisfied, requirement_array):
     return coverage, chosen, unsatisfied
 
 
+def multi_cover_formulation(available_to_block, next_infected, budget, model, contagion_index):
+    subsets = []
+    unsatisfied = set()
+    # Initialize requirement dict
+    requirement_dict = {}
+    # Construct subsets and unsatisfied array
+    for u in available_to_block:
+        subset = set()
+        for v in model.graph.neighbors(u):
+            if v in next_infected:
+                subset.add(v)
+                if v not in unsatisfied:
+                    unsatisfied.add(v)
+        subsets.append(subset)
+    # Compute requirement values
+    for unsat in unsatisfied:
+        threshold = model.params['nodes']["threshold_" + str(contagion_index)][unsat]
+        # Find number of infected neighbors
+        number_affected = model.graph.nodes[unsat]['affected_' + str(contagion_index)]
+        requirement_dict[unsat] = number_affected - threshold + 1
+    # Find the cover approximation
+    cover_approximation, chosen, unsatisfied_return = greedy_smc(budget, subsets, unsatisfied, requirement_dict)
+    return [available_to_block[index] for index in chosen], len(unsatisfied_return)
+
+
 def coverage_heuristic(budget_1, budget_2, model):
     """
     This drives the method drives the contagion blocking and details can be found in the paper.
@@ -58,7 +84,58 @@ def coverage_heuristic(budget_1, budget_2, model):
     return choices_1, choices_2
 
 
-def try_all_sets(node_infections, budget, model, seed_set, contagion_index=1):
+def ilp_formulation(available_to_block, next_infected, budget, model, contagion_index):
+    block = {}
+    # Initialize requirement dict
+    requirement_dict = {}
+    # Construct subsets and unsatisfied array
+    for u in available_to_block:
+        block[u] = []
+        for v in model.graph.neighbors(u):
+            if v in next_infected:
+                block[u].append(v)
+                if v not in requirement_dict.keys():
+                    threshold = model.params['nodes']["threshold_" + str(contagion_index)][v]
+                    # Find number of infected neighbors
+                    number_affected = model.graph.nodes[v]['affected_' + str(contagion_index)]
+                    requirement_dict[v] = number_affected - threshold + 1
+    # Compute requirement values
+
+    next_infected, requirements = gp.multidict(requirement_dict)
+
+    m = gp.Model("smc_ilp")
+
+    block = m.addVars(block.keys(), vtype=GRB.BINARY, name="Blocking node")
+    is_covered = m.addVars(next_infected, vtype=GRB.BINARY, name="Is_covered")
+
+    m.addConstrs((gp.quicksum(block[t] for t in block.keys() if r in block[t]) - requirements[r] + 1 <= is_covered[
+        r] * len(available_to_block)
+                  for r in next_infected), name="Constraint 1")
+
+    m.addConstrs((gp.quicksum(block[t] for t in block.keys() if r in block[t]) - requirements[r] + len(
+        available_to_block) >= is_covered[r] * len(available_to_block) for r in next_infected), name="Constraint 2")
+
+    m.addConstr(gp.quicksum(block) <= budget, name="budget")
+
+    m.setObjective(gp.quicksum(is_covered), GRB.MAXIMIZE)
+
+    m.optimize()
+
+    return [int(block[var]) for var in block if int(block[var]) == 1], m.objVal
+
+
+def try_all_sets(node_infections, budget, model, seed_set, coverage_function=multi_cover_formulation,
+                 contagion_index=1):
+    """
+
+    :param node_infections:
+    :param budget:
+    :param model:
+    :param seed_set:
+    :param coverage_function:
+    :param contagion_index:
+    :return:
+    """
     # Start iteration at i = 1 to find best nodes for contagion contagion_index
     # Int max
     min_unsatisfied = np.iinfo(np.int32).max
@@ -70,34 +147,14 @@ def try_all_sets(node_infections, budget, model, seed_set, contagion_index=1):
         if len(available_to_block) <= budget:
             # If we can vaccinate all nodes at infected at this time step return that.
             return available_to_block
-        subsets = []
-        unsatisfied = set()
-        # Initialize requirement dict
-        requirement_dict = {}
-        # Construct subsets and unsatisfied array
-        for u in available_to_block:
-            subset = set()
-            for v in model.graph.neighbors(u):
-                if v in node_infections[i + 1]:
-                    subset.add(v)
-                    if v not in unsatisfied:
-                        unsatisfied.add(v)
-            subsets.append(subset)
-        # Compute requirement values
-        for unsat in unsatisfied:
-            threshold = model.params['nodes']["threshold_" + str(contagion_index)][unsat]
-            # Find number of infected neighbors
-            number_affected = model.graph.nodes[unsat]['affected_' + str(contagion_index)]
-            requirement_dict[unsat] = number_affected - threshold + 1
-        # Find the cover approximation
-        cover_approximation, chosen, unsatisfied_return = greedy_smc(budget, subsets, unsatisfied, requirement_dict)
-        if not unsatisfied_return:
+        solution, num_unsatisfied = coverage_function(available_to_block, node_infections[i+1], budget, model,
+                                                         contagion_index)
+        if num_unsatisfied == 0:
             # If we have found an adequate cover, return that.
-            return [available_to_block[index] for index in chosen]
+            return solution
         # Check to see if the solution is the best failing one
-        num_unsatisfied = len(unsatisfied_return)
         if min_unsatisfied > num_unsatisfied:
             min_unsatisfied = num_unsatisfied
-            best_solution = [available_to_block[index] for index in chosen]
+            best_solution = solution
     # If no satisfied set is found, return the one with the least violations
     return best_solution
