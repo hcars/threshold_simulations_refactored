@@ -1,0 +1,14 @@
+If your Python version is not 3.7, you need to run:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python<version>_utf32
+Python 2.7:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python2.7_utf32
+Python 3.6:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python3.6_utf32
+Traceback (most recent call last):
+  File "compute_blocking_ilp.py", line 180, in <module>
+    main()
+  File "compute_blocking_ilp.py", line 127, in main
+    1)
+  File "/sfs/qumulo/qhome/hlc5v/threshold_simulations/coverage_heuristic.py", line 151, in try_all_sets
+    contagion_index)
+TypeError: ilp_formulation() takes 5 positional arguments but 6 were given

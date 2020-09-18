@@ -1,0 +1,22 @@
+If your Python version is not 3.7, you need to run:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python<version>_utf32
+Python 2.7:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python2.7_utf32
+Python 3.6:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python3.6_utf32
+Traceback (most recent call last):
+  File "compute_blocking_ilp.py", line 8, in <module>
+    import utils
+  File "/sfs/qumulo/qhome/hlc5v/threshold_simulations/utils.py", line 1, in <module>
+    import ndlib.models.ModelConfig as mc
+  File "/home/hlc5v/.conda/envs/threshold_sim/lib/python3.7/site-packages/ndlib/models/__init__.py", line 5, in <module>
+    from . import dynamic
+  File "/home/hlc5v/.conda/envs/threshold_sim/lib/python3.7/site-packages/ndlib/models/dynamic/__init__.py", line 5, in <module>
+    from .DynKerteszThresholdModel import DynKerteszThresholdModel
+  File "/home/hlc5v/.conda/envs/threshold_sim/lib/python3.7/site-packages/ndlib/models/dynamic/DynKerteszThresholdModel.py", line 1, in <module>
+    from ..DynamicDiffusionModel import DynamicDiffusionModel
+  File "/home/hlc5v/.conda/envs/threshold_sim/lib/python3.7/site-packages/ndlib/models/DynamicDiffusionModel.py", line 4, in <module>
+    from ndlib.models.DiffusionModel import DiffusionModel
+  File "/home/hlc5v/.conda/envs/threshold_sim/lib/python3.7/site-packages/ndlib/models/DiffusionModel.py", line 8, in <module>
+    import tqdm
+ModuleNotFoundError: No module named 'tqdm'
