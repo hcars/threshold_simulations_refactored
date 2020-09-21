@@ -76,8 +76,8 @@ def main():
     seeds = (6893, 20591, 20653)
     net_names = ["fb-pages-politician", "astroph", "wiki"]
     thresholds = (2, 3, 4)
-    budgets = [.005] + [.01 + i * .01 for i in range(12)]
-    sample_number = 10
+    budgets = [.005] + [.01 + i * .01 for i in range(8)]
+    sample_number = 5
 
     for i in range(len(net_names)):
         np.random.seed(seeds[i])
@@ -139,7 +139,9 @@ def main():
                         # Configure model
                         model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
+
                         results_blocked = model.simulation_run(first_infected=False)
+                        
                         # Find high degree nodes
                         choices_1, choices_2 = choose_nodes_by_degree(G, budget_1, budget_2, seed_set)
                         # Run forward

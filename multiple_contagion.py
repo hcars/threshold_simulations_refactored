@@ -46,6 +46,16 @@ class MultipleContagionThreshold(DiffusionModel):
                     "range": [0, np.iinfo(np.uint32).max],
                     "optional": True
                 },
+                 "blocked_1": {
+                    "descr": "Blocking attribute for 1.",
+                    "range": [0, 1],
+                    "optional": True
+                },
+                 "blocked_2": {
+                    "descr": "Blocking attribute for 2.",
+                    "range": [0, 1],
+                    "optional": True
+                },
 
             },
             "edges": {}
@@ -107,8 +117,8 @@ class MultipleContagionThreshold(DiffusionModel):
                 satisfied_1 = threshold_1 <= cnts[0]
                 satisfied_2 = threshold_2 <= cnts[1]
                 # Counts the infected status of neighbors and updates appropriately.
-                transition_1 = int(satisfied_1 and not (u_status == -3 or u_status == -1))
-                transition_2 = (int(satisfied_2 and not (u_status == -3 or u_status == -2)) * 2)
+                transition_1 = int(satisfied_1 and not (self.params['nodes']['blocked_1'][u]))
+                transition_2 = (int(satisfied_2 and not (self.params['nodes']['blocked_2'][u])) * 2)
 
                 if u_status == 0:
                     # Set status based off sum of transition

@@ -4,8 +4,6 @@ from multiple_contagion import MultipleContagionThreshold
 
 
 def config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3=None, blocked_1=[], blocked_2=[]):
-    G.remove_nodes_from(blocked_1)
-    G.remove_nodes_from(blocked_2)
     model = MultipleContagionThreshold(G)
     config = mc.Configuration()
     # No interaction
@@ -18,13 +16,18 @@ def config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3=None, blocked_
     config.add_model_initial_configuration('Infected', seed_set_1)
     config.add_model_initial_configuration('Infected_2', seed_set_2)
     config.add_model_initial_configuration('Infected_Both', seed_set_3)
+    
+    
     # Set nodes to being blocked
-    blocked_both = np.intersect1d(blocked_1, blocked_2)
-    blocked_1 = np.setdiff1d(blocked_both, blocked_1)
-    blocked_2 = np.setdiff1d(blocked_both, blocked_2)
-    config.add_model_initial_configuration('Blocked', blocked_1)
-    config.add_model_initial_configuration('Blocked_2', blocked_2)
-    config.add_model_initial_configuration('Blocked_Both', blocked_both)
+    config.add_node_set_configuration('blocked_1', {u: 0 for u in G.nodes})
+    config.add_node_set_configuration('blocked_2', {u: 0 for u in G.nodes})
+    for u in blocked_1:
+       config.add_node_configuration('blocked_1', u, 1)
+    for u in blocked_2:
+       config.add_node_configuration('blocked_2', u, 1)
+    #config.add_model_initial_configuration('Blocked', blocked_1)
+    #config.add_model_initial_configuration('Blocked_2', blocked_2)
+    #config.add_model_initial_configuration('Blocked_Both', blocked_both)
     # Set configuration
     model.set_initial_status(config)
     return model

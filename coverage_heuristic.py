@@ -101,17 +101,17 @@ def ilp_formulation(available_to_block, next_infected, budget, model, contagion_
                     requirement_dict[v] = number_affected - threshold + 1
     # Compute requirement values
 
-    next_infected, requirements = gp.multidict(requirement_dict)
+    next_infected = list(requirement_dict.keys())
     m = gp.Model("smc_ilp")
     
     blocking_vars = m.addVars(block.keys(), vtype=GRB.BINARY, name="Blocking node")
     is_covered = m.addVars(next_infected, vtype=GRB.BINARY, name="Is_covered")
 
-    m.addConstrs((gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirements[r] + 1 <= is_covered[
+    m.addConstrs((gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirement_dict[r] + 1 <= is_covered[
         r] * len(available_to_block)
                   for r in next_infected), name="Constraint 1")
 
-    m.addConstrs((gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirements[r] + len(
+    m.addConstrs((gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirement_dict[r] + len(
         available_to_block) >= is_covered[r] * len(available_to_block) for r in next_infected), name="Constraint 2")
 
     m.addConstr(gp.quicksum(blocking_vars) <= budget, name="budget")
@@ -119,8 +119,10 @@ def ilp_formulation(available_to_block, next_infected, budget, model, contagion_
     m.setObjective(gp.quicksum(is_covered), GRB.MAXIMIZE)
 
     m.optimize()
-
-    return [var for var in blocking_vars if blocking_vars[var].x == 1.0], m.objVal
+    
+    solution = [var for var in blocking_vars if blocking_vars[var].x == 1.0]
+    
+    return solution, m.objVal
 
 
 
