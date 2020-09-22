@@ -1,6 +1,6 @@
 import numpy as np
 from ndlib.models.DiffusionModel import DiffusionModel
-from cython.parallel import prange
+#from cython.parallel import prange
 
 class MultipleContagionThreshold(DiffusionModel):
 

@@ -88,8 +88,8 @@ def main():
     thresholds = (2, 3, 4)
     budgets = [.005] + [.01 + i * .01 for i in range(8)]
     sample_number = 100
-    solver = cbh.greedy_smc
-    if argv[1] == "optimal":
+    solver = cbh.multi_cover_formulation
+    if len(argv) > 1 and argv[1] == "optimal":
         solver = cbh.ilp_formulation
 
 
