@@ -1,6 +1,6 @@
 import numpy as np
 from ndlib.models.DiffusionModel import DiffusionModel
-
+from cython.parallel import prange
 
 class MultipleContagionThreshold(DiffusionModel):
 
@@ -139,7 +139,6 @@ class MultipleContagionThreshold(DiffusionModel):
 
         # identify the changes w.r.t. previous iteration
         delta, node_count, status_delta = self.status_delta(actual_status)
-        # print(delta)
         # update the actual status and iterative step
         self.status = actual_status
         self.actual_iteration += 1

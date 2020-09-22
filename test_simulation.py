@@ -53,6 +53,7 @@ while not fixed_point:
     iteration_results = model.iteration(node_status=True, first_infected=True)
     fixed_point = iteration_results['node_count'] == old_count
     old_count = iteration_results['node_count']
+print(time.time() - now)
 # first, second, results = model.simulation_run(True)
 # print(results['status_delta'])
 # print(first, second)
