@@ -102,18 +102,18 @@ def ilp_formulation(available_to_block, next_infected, budget, model, contagion_
                     requirement_dict[v] = number_affected - threshold + 1
     # Compute requirement values
 
-    next_infected, requirements = gp.multidict(requirement_dict)
+    next_infected = list(requirement_dict.keys())
     m = gp.Model("smc_ilp")
 
     blocking_vars = m.addVars(block.keys(), vtype=GRB.BINARY, name="Blocking node")
     is_covered = m.addVars(next_infected, vtype=GRB.BINARY, name="Is_covered")
 
     m.addConstrs(
-        (gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirements[r] + 1 <= is_covered[
+        (gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirement_dict[r] + 1 <= is_covered[
             r] * len(available_to_block)
          for r in next_infected), name="Constraint 1")
 
-    m.addConstrs((gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirements[r] + len(
+    m.addConstrs((gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirement_dict[r] + len(
         available_to_block) >= is_covered[r] * len(available_to_block) for r in next_infected), name="Constraint 2")
 
     m.addConstr(gp.quicksum(blocking_vars) <= budget, name="budget")
@@ -122,7 +122,9 @@ def ilp_formulation(available_to_block, next_infected, budget, model, contagion_
 
     m.optimize()
 
-    return [var for var in blocking_vars if blocking_vars[var].x == 1.0], m.objVal
+    solution = [var for var in blocking_vars if blocking_vars[var].x == 1.0]
+
+    return solution, m.objVal
 
 
 def try_all_sets(node_infections, budget, model, seed_set, coverage_function=multi_cover_formulation,
@@ -149,7 +151,7 @@ def try_all_sets(node_infections, budget, model, seed_set, coverage_function=mul
             # If we can vaccinate all nodes at infected at this time step return that.
             return available_to_block
         solution, num_unsatisfied = coverage_function(available_to_block, node_infections[i + 1], budget, model,
-                                                    contagion_index)
+                                                      contagion_index)
         if num_unsatisfied == 0:
             # If we have found an adequate cover, return that.
             return solution

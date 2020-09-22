@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=aw
 #SBATCH --nodes=1
-#SBATCH --mincpus=12
-#SBATCH --time=8:00:00
+#SBATCH --mincpus=16
+#SBATCH --time=16:00:00
 #SBATCH --output=complex_net_proposal/log/production-%j.qlog
 #SBATCH -p bii
 module load anaconda

@@ -15,8 +15,6 @@ config.add_model_parameter('interaction_1', 0)
 config.add_model_parameter('interaction_2', 0)
 config.add_node_set_configuration('threshold_1', {u: np.random.randint(1, 50) for u in G.nodes})
 config.add_node_set_configuration('threshold_2', {u: np.random.randint(1, 50) for u in G.nodes})
-config.add_node_set_configuration('blocked_1', {u: False for u in G.nodes})
-config.add_node_set_configuration('blocked_2', {u: False for u in G.nodes})
 
 
 

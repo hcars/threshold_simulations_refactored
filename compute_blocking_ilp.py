@@ -92,6 +92,7 @@ def main():
     if argv[1] == "optimal":
         solver = cbh.ilp_formulation
 
+
     for i in range(len(net_names)):
         np.random.seed(seeds[i])
         net_name = net_names[i]
@@ -146,7 +147,9 @@ def main():
                         # Configure model
                         model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
+
                         results_blocked = model.simulation_run(first_infected=False)
+                        
                         # Find high degree nodes
                         choices_1, choices_2 = choose_nodes_by_degree(G, budget_1, budget_2, seed_set)
                         # Run forward
