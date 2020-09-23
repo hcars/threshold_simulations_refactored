@@ -13,9 +13,6 @@ class MultipleContagionThreshold(DiffusionModel):
 
         # Available node statuses
         self.available_statuses = {
-            "Blocked_Both": -3,
-            "Blocked_2": -2,
-            "Blocked": -1,
             "Susceptible": 0,
             "Infected": 1,
             "Infected_2": 2,
