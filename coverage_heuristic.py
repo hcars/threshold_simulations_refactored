@@ -102,7 +102,7 @@ def mycallback(model, where):
             cutcnt = model.cbGet(GRB.Callback.MIP_CUTCNT)
             print('%d %d %d %g %g %d %d' % (nodecnt, actnodes,
                   itcnt, objbst, objbnd, solcnt, cutcnt))
-        if abs(objbst - objbnd) < 0.15 * (1.0 + abs(objbst)) and time > 1200:
+        if abs(objbst - objbnd) < 0.15 * (1.0 + abs(objbst)) and time > 900:
             print('Stop early - 15% gap achieved in 20 minutes')
             model.terminate()
 

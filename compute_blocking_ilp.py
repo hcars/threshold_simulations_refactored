@@ -76,9 +76,9 @@ def main():
         field_names += [
             str(i) + blocking for i in
             range(4)]
-    with open('complex_net_proposal/experiment_results/results_ilp.csv', 'w', newline='') as csv_fp:
-        csv_writer = csv.writer(csv_fp, delimiter=',')
-        csv_writer.writerow(field_names)
+    #with open('complex_net_proposal/experiment_results/results_ilp.csv', 'w', newline='') as csv_fp:
+    #    csv_writer = csv.writer(csv_fp, delimiter=',')
+    #    csv_writer.writerow(field_names)
     # Load in networks
     network_folder = "complex_net_proposal/experiment_networks/"
     # Constants for stochastic portion do not change
@@ -86,8 +86,8 @@ def main():
     seed_sizes = [20]
     net_names = ["fb-pages-politician", "astroph", "wiki"]
     thresholds = (2, 3, 4)
-    budgets = [.005] + [.01 + i * .01 for i in range(8)]
-    sample_number = 100
+    budgets = [.005] + [.01 + i * .01 for i in range(10)]
+    sample_number = 50
     solver = cbh.multi_cover_formulation
     if len(argv) > 1 and argv[1] == "optimal":
         solver = cbh.ilp_formulation
