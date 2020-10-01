@@ -7,9 +7,18 @@ import numpy as np
 import coverage_heuristic as cbh
 import utils
 
+from sys import argv
+
 
 def choose_seed(core, seed_size):
-    component = np.random.choice(core, seed_size, replace=False)
+    core_nodes = list(core.nodes())
+    component = [core_nodes[np.random.randint(0, len(core_nodes))]]
+    while len(component) < seed_size:
+        node_to_expand = component[np.random.randint(0, len(component))]
+        choose_from = list(core.neighbors(node_to_expand))
+        selection = choose_from[np.random.randint(0, len(choose_from))]
+        if selection not in component:
+            component.append(selection)
     seed_set_1 = []
     seed_set_2 = []
     seed_set_3 = []
@@ -67,17 +76,22 @@ def main():
         field_names += [
             str(i) + blocking for i in
             range(4)]
-    # with open('complex_net_proposal/experiment_results/results.csv', 'w', newline='') as csv_fp:
-    #     csv_writer = csv.writer(csv_fp, delimiter=',')
-    #     csv_writer.writerow(field_names)
+    with open('complex_net_proposal/experiment_results/results_smc_fresh.csv', 'w', newline='') as csv_fp:
+        csv_writer = csv.writer(csv_fp, delimiter=',')
+        csv_writer.writerow(field_names)
     # Load in networks
     network_folder = "complex_net_proposal/experiment_networks/"
     # Constants for stochastic portion do not change
+    seed_sizes = [20]
     seeds = (6893, 20591, 20653)
     net_names = ["fb-pages-politician", "astroph", "wiki"]
     thresholds = (2, 3, 4)
     budgets = [.005] + [.01 + i * .01 for i in range(12)]
-    sample_number = 10
+    sample_number = 100
+    solver =  cbh.multi_cover_formulation 
+    if len(argv) > 1 and argv[1] == "optimal":
+        solver = cbh.ilp_formulation
+
 
     for i in range(len(net_names)):
         np.random.seed(seeds[i])
@@ -93,14 +107,8 @@ def main():
             G.nodes[node]['affected_1'] = 0
             G.nodes[node]['affected_2'] = 0
         # Select k-core
-        k_core = list(nx.k_core(G, 20).nodes())
-        for seed_size in [10, 20]:
-            # Initialize accumulators Mult-level dict threshold -> (budget -> (results_avg, results_blocked_avg,
-            # results_degree_avg, results_random))
-            avgs = {
-                threshold: {int(budget * G.number_of_nodes()): tuple({state: 0 for state in range(4)} for i in range(4))
-                            for budget in budgets} for threshold in
-                thresholds}
+        k_core = G.subgraph(nx.k_core(G, 20).nodes())
+        for seed_size in seed_sizes:
             for sample in range(sample_number):
                 # Choose seed set
                 seed_set_1, seed_set_2, seed_set_3 = choose_seed(k_core, seed_size)
@@ -116,7 +124,6 @@ def main():
                         node_infections_1, node_infections_2, results = model.simulation_run()
                         # Analyze node counts
                         infected_1 = results['node_count'][1] + results['node_count'][3]
-                        infected_2 = results['node_count'][2] + results['node_count'][3]
                         total_infected = sum(results['node_count'][i] for i in range(1, 4))
                         # Select nodes appropriately
                         ratio_infected_1 = infected_1 / total_infected
@@ -124,23 +131,25 @@ def main():
                         budget_2 = budget - budget_1
                         # Run through the CBH from DMKD for both contagions.
                         choices_1 = cbh.try_all_sets(node_infections_1, budget_1, model, set(seed_set_1 + seed_set_3),
+                                                     solver,
                                                      1)
                         if len(choices_1) < budget_1:
                             budget_2 += budget_1 - len(choices_1)
                         choices_2 = cbh.try_all_sets(node_infections_2, budget_2, model, set(seed_set_2 + seed_set_3),
+                                                     solver,
                                                      2)
                         if len(choices_2) < budget_2:
                             choices_1 = cbh.try_all_sets(node_infections_1, budget_1 + (budget_2 - len(choices_2)),
-                                                         model, set(seed_set_1 + seed_set_3),
+                                                         model, set(seed_set_1 + seed_set_3), solver,
                                                          1)
-
-                        # TODO: Think about the situation where we can block both at a certain time steps.
 
                         # Run again with the CBH blocking
                         # Configure model
                         model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
+
                         results_blocked = model.simulation_run(first_infected=False)
+                        
                         # Find high degree nodes
                         choices_1, choices_2 = choose_nodes_by_degree(G, budget_1, budget_2, seed_set)
                         # Run forward
@@ -153,27 +162,20 @@ def main():
                         model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
                         results_random = model.simulation_run(first_infected=False)
-                        for state in range(4):
-                            avgs[threshold][budget][0][state] += results['node_count'][state]
-                            avgs[threshold][budget][1][state] += results_blocked['node_count'][state]
-                            avgs[threshold][budget][2][state] += results_blocked_degree['node_count'][state]
-                            avgs[threshold][budget][3][state] += results_random['node_count'][state]
-            for threshold in thresholds:
-                for budget in budgets:
-                    budget = int(budget * G.number_of_nodes())
-                    for accumulator in range(4):
-                        for state in range(4):
-                            avgs[threshold][budget][accumulator][state] /= sample_number
-                    with open('complex_net_proposal/experiment_results/results.csv', 'a', newline='') as results_fp:
-                        csv_writer = csv.writer(results_fp, delimiter=',')
-                        # Write problem data
-                        result_data = [net_name, str(threshold), str(seed_size),
-                                       str(budget)]
-                        # Add in the averages
-                        for accumulator in range(4):
-                            result_data += list(
-                                map(lambda x: str(x), avgs[threshold][budget][accumulator].values()))
-                        csv_writer.writerow(result_data)
+                        # Write out the results
+                        with open('complex_net_proposal/experiment_results/results_smc_fresh.csv', 'a',
+                                  newline='') as results_fp:
+                            csv_writer = csv.writer(results_fp, delimiter=',')
+                            # Write problem data
+                            result_data = [net_name, str(threshold), str(seed_size),
+                                           str(budget)]
+                            # Add in the averages
+                            for result_set in [results['node_count'], results_blocked['node_count'],
+                                               results_blocked_degree['node_count'], results_random['node_count']]:
+                                result_data += list(
+                                    map(lambda x: str(x), result_set.values())
+                                )
+                            csv_writer.writerow(result_data)
 
 
 if __name__ == '__main__':

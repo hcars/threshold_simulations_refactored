@@ -87,7 +87,7 @@ def main():
     net_names = ["fb-pages-politician", "astroph", "wiki"]
     thresholds = (2, 3, 4)
     budgets = [.005] + [.01 + i * .01 for i in range(10)]
-    sample_number = 50
+    sample_number = 10  
     solver = cbh.multi_cover_formulation
     if len(argv) > 1 and argv[1] == "optimal":
         solver = cbh.ilp_formulation
