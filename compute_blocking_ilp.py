@@ -76,7 +76,7 @@ def main():
         field_names += [
             str(i) + blocking for i in
             range(4)]
-    #with open('complex_net_proposal/experiment_results/results_ilp.csv', 'w', newline='') as csv_fp:
+    # with open('complex_net_proposal/experiment_results/results_ilp.csv', 'w', newline='') as csv_fp:
     #    csv_writer = csv.writer(csv_fp, delimiter=',')
     #    csv_writer.writerow(field_names)
     # Load in networks
@@ -87,11 +87,10 @@ def main():
     net_names = ["fb-pages-politician", "astroph", "wiki"]
     thresholds = (2, 3, 4)
     budgets = [.005] + [.01 + i * .01 for i in range(10)]
-    sample_number = 10  
+    sample_number = 10
     solver = cbh.multi_cover_formulation
     if len(argv) > 1 and argv[1] == "optimal":
         solver = cbh.ilp_formulation
-
 
     for i in range(len(net_names)):
         np.random.seed(seeds[i])
@@ -149,7 +148,7 @@ def main():
                                                    choices_2)
 
                         results_blocked = model.simulation_run(first_infected=False)
-                        
+
                         # Find high degree nodes
                         choices_1, choices_2 = choose_nodes_by_degree(G, budget_1, budget_2, seed_set)
                         # Run forward

@@ -114,12 +114,14 @@ class MultipleContagionThreshold(DiffusionModel):
                 satisfied_1 = threshold_1 <= cnts[0]
                 satisfied_2 = threshold_2 <= cnts[1]
                 # Counts the infected status of neighbors and updates appropriately.
-                transition_1 = int(satisfied_1 and not (self.params['nodes']['blocked_1'][u]))
-                transition_2 = (int(satisfied_2 and not (self.params['nodes']['blocked_2'][u])) * 2)
-
+                transition_1 = int(satisfied_1 and self.params['nodes']['blocked_1'][u] == 0)
+                transition_2 = (int(satisfied_2 and self.params['nodes']['blocked_2'][u] == 0) * 2)
+                # if self.params['nodes']['blocked_1'][u] == 0 or self.params['nodes']['blocked_2'][u] == 0:
+                #     print('blocked')
                 if u_status == 0:
                     # Set status based off sum of transition
                     actual_status[u] = transition_1 + transition_2
+
                     if first_infected:
                         if transition_1:
                             first_infected_1.add(u)

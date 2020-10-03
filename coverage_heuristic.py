@@ -1,6 +1,6 @@
-import gurobipy as gp
+# import gurobipy as gp
 import numpy as np
-from gurobipy import GRB
+# from gurobipy import GRB
 
 
 def greedy_smc(budget, collection_of_subsets, unsatisfied, requirement_array):
@@ -84,73 +84,74 @@ def coverage_heuristic(budget_1, budget_2, model):
     # Return the choices found.
     return choices_1, choices_2
 
-def mycallback(model, where):
-    if where == GRB.Callback.POLLING:
-        # Ignore polling callback
-        pass
-    elif where == GRB.Callback.MIP:
-        # General MIP callback
-        nodecnt = model.cbGet(GRB.Callback.MIP_NODCNT)
-        objbst = model.cbGet(GRB.Callback.MIP_OBJBST)
-        objbnd = model.cbGet(GRB.Callback.MIP_OBJBND)
-        solcnt = model.cbGet(GRB.Callback.MIP_SOLCNT)
-        time = model.cbGet(GRB.Callback.RUNTIME)
-        if nodecnt - model._lastnode >= 100:
-            model._lastnode = nodecnt
-            actnodes = model.cbGet(GRB.Callback.MIP_NODLFT)
-            itcnt = model.cbGet(GRB.Callback.MIP_ITRCNT)
-            cutcnt = model.cbGet(GRB.Callback.MIP_CUTCNT)
-            print('%d %d %d %g %g %d %d' % (nodecnt, actnodes,
-                  itcnt, objbst, objbnd, solcnt, cutcnt))
-        if abs(objbst - objbnd) < 0.15 * (1.0 + abs(objbst)) and time > 900:
-            print('Stop early - 15% gap achieved in 20 minutes')
-            model.terminate()
 
-
-def ilp_formulation(available_to_block, next_infected, budget, model, contagion_index):
-    block = {}
-    # Initialize requirement dict
-    requirement_dict = {}
-    # Construct subsets and unsatisfied array
-    for u in available_to_block:
-        block[u] = []
-        for v in model.graph.neighbors(u):
-            if v in next_infected:
-                block[u].append(v)
-                if v not in requirement_dict.keys():
-                    threshold = model.params['nodes']["threshold_" + str(contagion_index)][v]
-                    # Find number of infected neighbors
-                    number_affected = model.graph.nodes[v]['affected_' + str(contagion_index)]
-                    requirement_dict[v] = number_affected - threshold + 1
-    # Compute requirement values
-
-    next_infected = list(requirement_dict.keys())
-    m = gp.Model("smc_ilp")
-
-    blocking_vars = m.addVars(block.keys(), vtype=GRB.BINARY, name="Blocking node")
-    is_covered = m.addVars(next_infected, vtype=GRB.BINARY, name="Is_covered")
-
-    m.addConstrs(
-        (gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirement_dict[r] + 1 <= is_covered[
-            r] * len(available_to_block)
-         for r in next_infected), name="Constraint 1")
-
-    m.addConstrs((gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirement_dict[r] + len(
-        available_to_block) >= is_covered[r] * len(available_to_block) for r in next_infected), name="Constraint 2")
-
-    m.addConstr(gp.quicksum(blocking_vars) <= budget, name="budget")
-
-    m.setObjective(gp.quicksum(is_covered), GRB.MAXIMIZE)
-    
-    m._lastiter = -GRB.INFINITY
-    m._lastnode = -GRB.INFINITY
-    m._vars = m.getVars()
-
-    m.optimize(mycallback)
-
-    solution = [var for var in blocking_vars if blocking_vars[var].x == 1.0]
-
-    return solution, m.objVal
+# def mycallback(model, where):
+#     if where == GRB.Callback.POLLING:
+#         # Ignore polling callback
+#         pass
+#     elif where == GRB.Callback.MIP:
+#         # General MIP callback
+#         nodecnt = model.cbGet(GRB.Callback.MIP_NODCNT)
+#         objbst = model.cbGet(GRB.Callback.MIP_OBJBST)
+#         objbnd = model.cbGet(GRB.Callback.MIP_OBJBND)
+#         solcnt = model.cbGet(GRB.Callback.MIP_SOLCNT)
+#         time = model.cbGet(GRB.Callback.RUNTIME)
+#         if nodecnt - model._lastnode >= 100:
+#             model._lastnode = nodecnt
+#             actnodes = model.cbGet(GRB.Callback.MIP_NODLFT)
+#             itcnt = model.cbGet(GRB.Callback.MIP_ITRCNT)
+#             cutcnt = model.cbGet(GRB.Callback.MIP_CUTCNT)
+#             print('%d %d %d %g %g %d %d' % (nodecnt, actnodes,
+#                                             itcnt, objbst, objbnd, solcnt, cutcnt))
+#         if abs(objbst - objbnd) < 0.15 * (1.0 + abs(objbst)) and time > 900:
+#             print('Stop early - 15% gap achieved in 20 minutes')
+#             model.terminate()
+#
+#
+# def ilp_formulation(available_to_block, next_infected, budget, model, contagion_index):
+#     block = {}
+#     # Initialize requirement dict
+#     requirement_dict = {}
+#     # Construct subsets and unsatisfied array
+#     for u in available_to_block:
+#         block[u] = []
+#         for v in model.graph.neighbors(u):
+#             if v in next_infected:
+#                 block[u].append(v)
+#                 if v not in requirement_dict.keys():
+#                     threshold = model.params['nodes']["threshold_" + str(contagion_index)][v]
+#                     # Find number of infected neighbors
+#                     number_affected = model.graph.nodes[v]['affected_' + str(contagion_index)]
+#                     requirement_dict[v] = number_affected - threshold + 1
+#     # Compute requirement values
+#
+#     next_infected = list(requirement_dict.keys())
+#     m = gp.Model("smc_ilp")
+#
+#     blocking_vars = m.addVars(block.keys(), vtype=GRB.BINARY, name="Blocking node")
+#     is_covered = m.addVars(next_infected, vtype=GRB.BINARY, name="Is_covered")
+#
+#     m.addConstrs(
+#         (gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirement_dict[r] + 1 <= is_covered[
+#             r] * len(available_to_block)
+#          for r in next_infected), name="Constraint 1")
+#
+#     m.addConstrs((gp.quicksum(blocking_vars[t] for t in block.keys() if r in block[t]) - requirement_dict[r] + len(
+#         available_to_block) >= is_covered[r] * len(available_to_block) for r in next_infected), name="Constraint 2")
+#
+#     m.addConstr(gp.quicksum(blocking_vars) <= budget, name="budget")
+#
+#     m.setObjective(gp.quicksum(is_covered), GRB.MAXIMIZE)
+#
+#     m._lastiter = -GRB.INFINITY
+#     m._lastnode = -GRB.INFINITY
+#     m._vars = m.getVars()
+#
+#     m.optimize(mycallback)
+#
+#     solution = [var for var in blocking_vars if blocking_vars[var].x == 1.0]
+#
+#     return solution, m.objVal
 
 
 def try_all_sets(node_infections, budget, model, seed_set, coverage_function=multi_cover_formulation,
@@ -187,11 +188,3 @@ def try_all_sets(node_infections, budget, model, seed_set, coverage_function=mul
             best_solution = solution
     # If no satisfied set is found, return the one with the least violations
     return best_solution
-
-
-
-
-
-
-
-

@@ -16,18 +16,14 @@ def config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3=None, blocked_
     config.add_model_initial_configuration('Infected', seed_set_1)
     config.add_model_initial_configuration('Infected_2', seed_set_2)
     config.add_model_initial_configuration('Infected_Both', seed_set_3)
-    
-    
+
     # Set nodes to being blocked
-    config.add_node_set_configuration('blocked_1', {u: 0 for u in G.nodes})
-    config.add_node_set_configuration('blocked_2', {u: 0 for u in G.nodes})
+    config.add_node_set_configuration('blocked_1', {u: False for u in G.nodes if u not in blocked_1})
+    config.add_node_set_configuration('blocked_2', {u: False for u in G.nodes if u not in blocked_2})
     for u in blocked_1:
-       config.add_node_configuration('blocked_1', u, 1)
+       config.add_node_configuration('blocked_1', u, True)
     for u in blocked_2:
-       config.add_node_configuration('blocked_2', u, 1)
-    #config.add_model_initial_configuration('Blocked', blocked_1)
-    #config.add_model_initial_configuration('Blocked_2', blocked_2)
-    #config.add_model_initial_configuration('Blocked_Both', blocked_both)
+       config.add_node_configuration('blocked_2', u, True)
     # Set configuration
     model.set_initial_status(config)
     return model

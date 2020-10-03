@@ -7,18 +7,17 @@ import numpy as np
 import coverage_heuristic as cbh
 import utils
 
-from sys import argv
-
 
 def choose_seed(core, seed_size):
     core_nodes = list(core.nodes())
-    component = [core_nodes[np.random.randint(0, len(core_nodes))]]
-    while len(component) < seed_size:
-        node_to_expand = component[np.random.randint(0, len(component))]
-        choose_from = list(core.neighbors(node_to_expand))
-        selection = choose_from[np.random.randint(0, len(choose_from))]
-        if selection not in component:
-            component.append(selection)
+    # component = [core_nodes[np.random.randint(0, len(core_nodes))]]
+    # while len(component) < seed_size:
+    #     node_to_expand = component[np.random.randint(0, len(component))]
+    #     choose_from = list(core.neighbors(node_to_expand))
+    #     selection = choose_from[np.random.randint(0, len(choose_from))]
+    #     if selection not in component:
+    #         component.append(selection)
+    component = np.random.choice(core_nodes, seed_size, replace=False)
     seed_set_1 = []
     seed_set_2 = []
     seed_set_3 = []
@@ -76,7 +75,7 @@ def main():
         field_names += [
             str(i) + blocking for i in
             range(4)]
-    with open('complex_net_proposal/experiment_results/results_smc_fresh.csv', 'w', newline='') as csv_fp:
+    with open('complex_net_proposal/experiment_results/results_complex_update.csv', 'w', newline='') as csv_fp:
         csv_writer = csv.writer(csv_fp, delimiter=',')
         csv_writer.writerow(field_names)
     # Load in networks
@@ -86,13 +85,11 @@ def main():
     seeds = (6893, 20591, 20653)
     net_names = ["fb-pages-politician", "astroph", "wiki"]
     thresholds = (2, 3, 4)
-    budgets = [.005] + [.01 + i * .01 for i in range(12)]
-    sample_number = 100
-    solver =  cbh.multi_cover_formulation 
-    if len(argv) > 1 and argv[1] == "optimal":
-        solver = cbh.ilp_formulation
-
-
+    budgets = [.01 + i * .005 for i in range(20)]
+    sample_number = 50
+    solver = cbh.multi_cover_formulation
+    # if len(argv) > 1 and argv[1] == "optimal":
+    #     solver = cbh.ilp_formulation
     for i in range(len(net_names)):
         np.random.seed(seeds[i])
         net_name = net_names[i]
@@ -116,17 +113,17 @@ def main():
                 for k in range(len(thresholds)):
                     # Pull out threshold
                     threshold = thresholds[k]
+                    # Configure model
+                    model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3)
+                    node_infections_1, node_infections_2, results = model.simulation_run()
+                    # Analyze node counts
+                    infected_1 = results['node_count'][1]
+                    total_infected = sum(results['node_count'][i] for i in range(1, 4))
+                    ratio_infected_1 = infected_1 / total_infected
                     for j in range(len(budgets)):
                         # Get the budget
                         budget = int(budgets[j] * G.number_of_nodes())
-                        # Configure model
-                        model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3)
-                        node_infections_1, node_infections_2, results = model.simulation_run()
-                        # Analyze node counts
-                        infected_1 = results['node_count'][1] + results['node_count'][3]
-                        total_infected = sum(results['node_count'][i] for i in range(1, 4))
                         # Select nodes appropriately
-                        ratio_infected_1 = infected_1 / total_infected
                         budget_1 = int(ratio_infected_1 * budget)
                         budget_2 = budget - budget_1
                         # Run through the CBH from DMKD for both contagions.
@@ -139,17 +136,16 @@ def main():
                                                      solver,
                                                      2)
                         if len(choices_2) < budget_2:
-                            choices_1 = cbh.try_all_sets(node_infections_1, budget_1 + (budget_2 - len(choices_2)),
-                                                         model, set(seed_set_1 + seed_set_3), solver,
-                                                         1)
-
+                            budget_1 += budget_2 - len(choices_2)
+                        choices_1 = cbh.try_all_sets(node_infections_1, budget_1, model, set(seed_set_1 + seed_set_3),
+                                                     solver,
+                                                     1)
                         # Run again with the CBH blocking
                         # Configure model
                         model = utils.config_model(G, threshold, seed_set_1, seed_set_2, seed_set_3, choices_1,
                                                    choices_2)
 
                         results_blocked = model.simulation_run(first_infected=False)
-                        
                         # Find high degree nodes
                         choices_1, choices_2 = choose_nodes_by_degree(G, budget_1, budget_2, seed_set)
                         # Run forward
@@ -163,7 +159,7 @@ def main():
                                                    choices_2)
                         results_random = model.simulation_run(first_infected=False)
                         # Write out the results
-                        with open('complex_net_proposal/experiment_results/results_smc_fresh.csv', 'a',
+                        with open('complex_net_proposal/experiment_results/results_complex_update.csv', 'a',
                                   newline='') as results_fp:
                             csv_writer = csv.writer(results_fp, delimiter=',')
                             # Write problem data
