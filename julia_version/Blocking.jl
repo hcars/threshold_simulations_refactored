@@ -3,7 +3,6 @@ module Blocking
 
     using LightGraphs;
     include("./DiffusionModel.jl")
-
     function mcich(model, seed_nodes::Set{Int}, updates:: Vector{Tuple}, budgets::Vector{Int})
         blockings = Vector()
         for i=1:length(budgets)
@@ -23,7 +22,7 @@ module Blocking
                 to_block = Dict{Int, UInt}()
                 next_dict = updates[j+1][i]
                 for node in available_to_block
-                    for neighbor in neighbors(model.network, node)
+                    for neighbor in all_neighbors(model.network, node)
                         if haskey(next_dict, neighbor)
                             requirement = get(next_dict, neighbor, 0) - get(model.thresholdStates, neighbor, model.θ_i[i]) + 1
                             get!(to_block, neighbor, requirement)

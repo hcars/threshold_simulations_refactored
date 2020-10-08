@@ -19,7 +19,10 @@ module DiffusionModel
 
 
 
-	function iterate(model::MultiDiffusionModel)
+	function iterate!(model::MultiDiffusionModel)
+		"""
+		This completes a one time step update.
+		"""
 		updated_1 = Dict{Int, UInt32}()	
 		updated_2 = Dict{Int, UInt32}()
 		for u in vertices(model.network)
@@ -74,10 +77,10 @@ module DiffusionModel
 
 	function full_run(model::MultiDiffusionModel)
 		updates = Vector{Tuple}()
-		updated = iterate(model)
+		updated = iterate!(model)
 		append!(updates, [updated])
 		while !(isempty(updated[1]) && isempty(updated[2]))
-			updated = iterate(model)
+			updated = iterate!(model)
 			if !(isempty(updated[1]) && isempty(updated[2]))
 				append!(updates, [updated])
 			end
