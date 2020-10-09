@@ -16,7 +16,40 @@ module DiffusionModel
 		t::UInt32
 	end
 
+	function MultiDiffusionModel()
+		nodeStates = Dict{Int, UInt8}()
+		blockedDict = Dict{Int, UInt8}()
+		thresholdStates = Dict{Int, UInt32}()
+		return MultiDiffusionModel(graph, nodeStates, thresholdStates, blockedDict, [UInt32(2), UInt(2)], UInt(0))
+	end
 
+	function MultiDiffusionModel(θ_i::Vector{UInt32})
+		nodeStates = Dict{Int, UInt8}()
+		blockedDict = Dict{Int, UInt8}()
+		thresholdStates = Dict{Int, UInt32}()
+		return MultiDiffusionModel(graph, nodeStates, thresholdStates, blockedDict, θ_i, UInt(0))
+	end
+
+	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Set{Int})
+		nodeStates = Dict{Int, UInt8}()
+		for seed in seeds
+			infection = rand(1:3)
+			get!(nodeStates, seed, infection)
+		end
+		model.t = UInt32(0)
+		model.nodeStates = nodesStates
+	end
+
+	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Tuple{Set{Int}, Set{Int}})
+		nodeStates = Dict{Int, UInt8}()
+		for i=1:length(seeds)
+			for seed in seeds[i]
+				get!(nodeStates, seed, i)
+			end
+		end
+		model.t = UInt32(0)
+		model.nodeStates = nodesStates
+	end
 
 
 	function iterate!(model::MultiDiffusionModel)

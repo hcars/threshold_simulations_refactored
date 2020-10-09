@@ -2,6 +2,7 @@ include("../DiffusionModel.jl")
 include("../Blocking.jl")
 using LightGraphs;
 using Test;
+using GLPK;
 
 # Test propogation 1
 my_graph_1 = path_graph(5)
@@ -53,15 +54,15 @@ for i=1:length(full_run_1)
 end
 # Test propogation 4
 # Try blocking 
-blockers = Blocking.greedy_smc(model, Set{Int}(keys(full_run_1[1][1])), Dict{Int, UInt}([(3, UInt(1))]), 1)
+blockers = Blocking.coverage(model, Set{Int}(keys(full_run_1[1][1])), Dict{Int, UInt}([(3, UInt(1))]), 1)
 @test blockers[1] == [2]
 # Test propogation 5
 # Try blocking 
-blockers = Blocking.greedy_smc(model, Set{Int}(keys(full_run_1[1][1])), Dict{Int, UInt}([(3, UInt(1))]), 0)
+blockers = Blocking.coverage(model, Set{Int}(keys(full_run_1[1][1])), Dict{Int, UInt}([(3, UInt(1))]), 0)
 @test blockers[1] == []
 # Test propogation 6
 # Try blocking 
-blockers = Blocking.greedy_smc(model, Set{Int}(keys(full_run_1[1][1])), Dict{Int, UInt}([(3, UInt(1))]), 4)
+blockers = Blocking.coverage(model,  Set{Int}(keys(full_run_1[1][1])), Dict{Int, UInt}([(3, UInt(1))]), 4)
 @test blockers[1] == [2]
 # Test propogation 7 
 # Try mcich
@@ -75,7 +76,7 @@ blockedDict_1 = Dict{Int, UInt8}()
 thresholdStates_1 = Dict{Int, UInt32}()
 model = DiffusionModel.MultiDiffusionModel(my_graph_1, node_states_1, thresholdStates_1, blockedDict_1, [UInt32(1), UInt32(1)], UInt32(0))
 full_run_1 = DiffusionModel.full_run(model)
-blocker = Blocking.mcich(model, Set{Int}(), full_run_1, [1, 2])
+blocker = Blocking.mcich(model, (Set{Int}(), Set{Int}()), full_run_1, [1, 2])
 @test blocker[1] == [3]
 # Test propogation 8
 # Different run
@@ -112,5 +113,9 @@ get!(node_states_2, 5, 2)
 get!(node_states_2, 7, 2)
 model_other = DiffusionModel.MultiDiffusionModel(my_graph_2, node_states_2, thresholdStates_2, blockedDict_2, [UInt32(2), UInt32(2)], UInt32(0))
 full_run_2 = DiffusionModel.full_run(model_other)
-blocker = Blocking.mcich(model_other, Set{Int}([2, 4, 5, 7]), full_run_2, [0, 1])
+blocker = Blocking.mcich(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, [0, 1])
+@test blocker[2] == [6]
+# Test 10
+# Run and find optimal 
+blocker = Blocking.mcich_optimal(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, [0, 1], GLPK.Optimizer)
 @test blocker[2] == [6]
