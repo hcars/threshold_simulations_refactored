@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+    {
+        "type": "julia",
+        "request": "launch",
+        "name": "Main debugging",
+        "program": "main.jl",
+        "args": ["../complex_net_proposal/experiment_networks/astroph.edges",
+        "1",
+        "centola",
+        "20",
+        "8886",
+        "../complex_net_proposal/experiment_results/results_run_mcich.csv"
+        ],
+        "stopOnEntry": false,
+        "juliaEnv": "${command:activeJuliaEnvironment}"
+    },
+        {
+            "type": "julia",
+            "request": "launch",
+            "name": "Run active Julia file",
+            "program": "${file}",
+            "stopOnEntry": false,
+            "cwd": "${workspaceFolder}",
+            "juliaEnv": "${command:activeJuliaEnvironment}"
+        }
+    ]
+}

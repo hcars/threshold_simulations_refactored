@@ -119,3 +119,13 @@ blocker = Blocking.mcich(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full
 # Run and find optimal 
 blocker = Blocking.mcich_optimal(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, [0, 1], GLPK.Optimizer)
 @test blocker[2] == [6]
+# Test 11
+graph_3 = binary_tree(4)
+node_states_3 = Dict(1=>3)
+blockedDict_3 = Dict{Int, UInt8}()
+thresholdStates_3 = Dict{Int, UInt32}()
+model_3 = DiffusionModel.MultiDiffusionModel(graph_3, node_states_3, thresholdStates_3, blockedDict_3, [UInt32(1), UInt32(1)], UInt32(0))
+full_run_3 = DiffusionModel.full_run(model_3)
+blocker = Blocking.mcich(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, [1, 1])
+@test blocker[1] == [2]
+@test blocker[2] == [2]

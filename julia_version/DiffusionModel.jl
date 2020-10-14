@@ -16,14 +16,14 @@ module DiffusionModel
 		t::UInt32
 	end
 
-	function MultiDiffusionModel()
+	function MultiDiffusionModelConstructor(graph)
 		nodeStates = Dict{Int, UInt8}()
 		blockedDict = Dict{Int, UInt8}()
 		thresholdStates = Dict{Int, UInt32}()
-		return MultiDiffusionModel(graph, nodeStates, thresholdStates, blockedDict, [UInt32(2), UInt(2)], UInt(0))
+		return MultiDiffusionModel(graph, nodeStates, thresholdStates, blockedDict, [UInt32(2), UInt32(2)], UInt(0))
 	end
 
-	function MultiDiffusionModel(θ_i::Vector{UInt32})
+	function MultiDiffusionModelConstructor(graph, θ_i::Vector{UInt32})
 		nodeStates = Dict{Int, UInt8}()
 		blockedDict = Dict{Int, UInt8}()
 		thresholdStates = Dict{Int, UInt32}()
@@ -37,7 +37,7 @@ module DiffusionModel
 			get!(nodeStates, seed, infection)
 		end
 		model.t = UInt32(0)
-		model.nodeStates = nodesStates
+		model.nodeStates = nodeStates
 	end
 
 	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Tuple{Set{Int}, Set{Int}})
@@ -48,9 +48,22 @@ module DiffusionModel
 			end
 		end
 		model.t = UInt32(0)
-		model.nodeStates = nodesStates
+		model.nodeStates = nodeStates
 	end
 
+	function set_blocking!(model::MultiDiffusionModel, blockers::Vector)
+		blockingDict = Dict{Int, UInt8}()
+		for i=1:length(blockers)
+			curr_set = blockers[i]
+			for node in curr_set
+				state = get(blockingDict, node, 0)
+				state += i 
+				delete!(blockingDict, node)
+				get!(blockingDict, node, state)
+			end
+		end
+		model.blockedDict = blockingDict
+	end
 
 	function iterate!(model::MultiDiffusionModel)
 		"""

@@ -9,43 +9,47 @@ module Blocking
 
     function mcich(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int})
         blockings = Vector()
-        for i=1:length(budgets)
-            budget = budgets[i]
-            candidate_blocker = Vector{Int}()
-            unblocked_min = Inf 
-            seed_nodes = seed_sets[i]
-            for j=1:length(updates)
-                find_blocking = updates[j][i]
-                if isempty(find_blocking)
-                    break
-                end
-                available_to_block = setdiff(Set{Int}(keys(find_blocking)), seed_nodes)
-                if length(available_to_block) <= budget
-                    candidate_blocker = available_to_block
-                    break
-                end
-                to_block = Dict{Int, UInt}()
-                next_dict = updates[j+1][i]
-                for node in available_to_block
-                    for neighbor in all_neighbors(model.network, node)
-                        if haskey(next_dict, neighbor)
-                            requirement = get(next_dict, neighbor, 0) - get(model.thresholdStates, neighbor, model.θ_i[i]) + 1
-                            get!(to_block, neighbor, requirement)
+            for i=1:length(budgets)
+                budget = budgets[i]
+                candidate_blocker = Vector{Int}()
+                unblocked_min = Inf 
+                seed_nodes = seed_sets[i]
+                for j=1:length(updates) - 1
+                    find_blocking = updates[j][i]
+                    if isempty(find_blocking)
+                        break
+                    end
+                    available_to_block = setdiff(Set{Int}(keys(find_blocking)), seed_nodes)
+                    if length(available_to_block) <= budget
+                        candidate_blocker = available_to_block
+                        break
+                    end
+                    to_block = Dict{Int, UInt}()
+                    next_dict = updates[j+1][i]
+                    for node in available_to_block
+                        for neighbor in all_neighbors(model.network, node)
+                            if haskey(next_dict, neighbor)
+                                requirement = get(next_dict, neighbor, 0) - get(model.thresholdStates, neighbor, model.θ_i[i]) + 1
+                                get!(to_block, neighbor, requirement)
+                            end
                         end
                     end
+                    if isempty(to_block)
+                        break
+                    end
+                    current_blocking, unblocked = coverage(model, Set{Int}(available_to_block), to_block, budget)
+                    if unblocked == 0
+                        candidate_blocker = current_blocking 
+                        break
+                    elseif unblocked < unblocked_min
+                        candidate_blocker = current_blocking
+                        unblocked_min = unblocked   
+                    end
                 end
-                if isempty(to_block)
-                    break
-                end
-                current_blocking, unblocked = coverage(model, Set{Int}(available_to_block), to_block, budget)
-                if unblocked == 0
-                    candidate_blocker = current_blocking 
-                    break
-                elseif unblocked < unblocked_min
-                    candidate_blocker = current_blocking
-                end
+            append!(blockings, [candidate_blocker])
+            if length(blockings) < budget && i < length(budgets)
+                budgets[i+1] += budget - length(blockings)
             end
-        append!(blockings, [candidate_blocker])
         end
         return blockings
     end
@@ -129,6 +133,7 @@ module Blocking
                     break
                 elseif unblocked < unblocked_min
                     candidate_blocker = current_blocking
+                    unblocked_min = unblocked
                 end
             end
         append!(blockings, [candidate_blocker])
