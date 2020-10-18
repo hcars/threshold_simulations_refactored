@@ -3,7 +3,6 @@ module Blocking
 
     using LightGraphs;
     using JuMP;
-    using GLPK;
     include("./DiffusionModel.jl")
 
 

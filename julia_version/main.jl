@@ -1,6 +1,5 @@
 using LightGraphs;
 using GraphIO;
-using GLPK;
 using Random;
 using Test;
 include("./DiffusionModel.jl")

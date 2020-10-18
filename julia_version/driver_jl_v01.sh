@@ -13,7 +13,7 @@ output_append="../complex_net_proposal/experiment_results/results_run_mcich.csv"
 
 random_seed=8886
 
-repititions=1
+repititions=50
 
 seed_method="random_k_core"
 
