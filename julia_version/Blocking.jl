@@ -26,18 +26,22 @@ module Blocking
                     end
                     to_block = Dict{Int, UInt}()
                     next_dict = updates[j+1][i]
+                    blocking_map = Dict{Int, Vector}()
                     for node in available_to_block
+                        neighbors_to_block = Vector{Int}()
                         for neighbor in all_neighbors(model.network, node)
                             if haskey(next_dict, neighbor)
                                 requirement = get(next_dict, neighbor, 0) - get(model.thresholdStates, neighbor, model.θ_i[i]) + 1
                                 get!(to_block, neighbor, requirement)
+                                append!(neighbors_to_block, [neighbor])
                             end
                         end
+                        get!(blocking_map, node, neighbors_to_block)
                     end
                     if isempty(to_block)
                         break
                     end
-                    current_blocking, unblocked = coverage(model, Set{Int}(available_to_block), to_block, budget)
+                    current_blocking, unblocked = coverage(blocking_map, to_block, budget)
                     if unblocked == 0
                         candidate_blocker = current_blocking 
                         break
@@ -45,7 +49,7 @@ module Blocking
                         candidate_blocker = current_blocking
                         unblocked_min = unblocked   
                     end
-                end
+                end  
             append!(blockings, [candidate_blocker])
             if length(blockings) < budget && i < length(budgets)
                 budgets[i+1] += budget - length(blockings)
@@ -56,29 +60,22 @@ module Blocking
 
     
 
-    function coverage(model, available_to_block::Set{Int}, to_block::Dict{Int, UInt}, budget::Int)
+    function coverage(available_to_block::Dict{Int, Vector}, to_block::Dict{Int, UInt}, budget::Int)
         upperLimit = minimum([budget, length(available_to_block)])
         best_blocking = Vector{Int}(undef, upperLimit)
         for i=1:upperLimit
-            largest_intersection = 0
             local best_node::Int
-            for possible_node in available_to_block
-                neighbors_in_next = Set{Int}()
-                for neighbor in all_neighbors(model.network, possible_node)
-                    if haskey(to_block, neighbor)
-                        union!(neighbors_in_next, [neighbor])
-                    end
-                end
-                unblocked_neighbors = intersect(neighbors_in_next, keys(to_block))
+            largest_intersection = 0
+            for possible_node in keys(available_to_block)
+                unblocked_neighbors = intersect(get(available_to_block, possible_node, []), keys(to_block))
                 if length(unblocked_neighbors) > largest_intersection
                     largest_intersection = length(unblocked_neighbors)
                     best_node = possible_node
                 end
             end
-            setdiff!(available_to_block, [best_node])
             best_blocking[i] = best_node
-            for node in neighbors(model.network, best_node)
-                if haskey(to_block, node)
+            for node in get(available_to_block, best_node, [])
+                if node in keys(to_block)
                     requirement = get(to_block, node, 0)
                     requirement -= 1
                     delete!(to_block, node)
@@ -87,6 +84,10 @@ module Blocking
                     end
                 end
             end
+            if isempty(to_block)
+                break
+            end
+            delete!(available_to_block, best_node)
         end
         return best_blocking, length(keys(to_block))
     end

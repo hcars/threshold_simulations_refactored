@@ -44,7 +44,11 @@ module DiffusionModel
 		nodeStates = Dict{Int, UInt8}()
 		for i=1:length(seeds)
 			for seed in seeds[i]
-				get!(nodeStates, seed, i)
+				value = get!(nodeStates, seed, 0)
+				value += i 
+				
+				delete!(nodeStates, seed)
+				get!(nodeStates, seed, value)
 			end
 		end
 		model.t = UInt32(0)

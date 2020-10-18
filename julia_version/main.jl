@@ -2,6 +2,7 @@ using LightGraphs;
 using GraphIO;
 using GLPK;
 using Random;
+using Test;
 include("./DiffusionModel.jl")
 include("./Blocking.jl")
 
@@ -42,6 +43,7 @@ function main()
 						union!(seed_set_2, [node])
 					else
 						union!(seed_set_1, [node])
+						union!(seed_set_2, [node])
 					end
 				end
 				no_blocking_results = DiffusionModel.full_run(model)
@@ -55,11 +57,14 @@ function main()
 						budget_2 = Int(curr_budget - budget_1)
 						selected_budgets =  [budget_1, budget_2]
 
+
+						
 						blockers_mcich = Blocking.mcich(model, (seed_set_1, seed_set_2), no_blocking_results, selected_budgets)	
 						DiffusionModel.set_blocking!(model, blockers_mcich)
 						DiffusionModel.set_initial_conditions!(model, (seed_set_1, seed_set_2))
 						DiffusionModel.full_run(model)
 						blocking_summary_mcich = DiffusionModel.getStateSummary(model)
+
 
 						blockers_random = random_blocking(model, selected_budgets, (seed_set_1, seed_set_2))	
 						DiffusionModel.set_blocking!(model, blockers_random)
