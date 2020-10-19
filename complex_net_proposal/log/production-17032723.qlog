@@ -1,0 +1,22 @@
+ERROR: LoadError: UndefVarError: best_node not defined
+Stacktrace:
+ [1] coverage(::Main.DiffusionModel.MultiDiffusionModel, ::Set{Int64}, ::Dict{Int64,UInt64}, ::Int64) at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/Blocking.jl:77
+ [2] mcich(::Main.DiffusionModel.MultiDiffusionModel, ::Tuple{Set{Int64},Set{Int64}}, ::Array{Tuple,1}, ::Array{Int64,1}) at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/Blocking.jl:39
+ [3] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:57
+ [4] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:197
+ [5] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [6] include(::Module, ::String) at ./Base.jl:368
+ [7] exec_options(::Base.JLOptions) at ./client.jl:296
+ [8] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:197
+ERROR: LoadError: UndefVarError: best_node not defined
+Stacktrace:
+ [1] coverage(::Main.DiffusionModel.MultiDiffusionModel, ::Set{Int64}, ::Dict{Int64,UInt64}, ::Int64) at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/Blocking.jl:77
+ [2] mcich(::Main.DiffusionModel.MultiDiffusionModel, ::Tuple{Set{Int64},Set{Int64}}, ::Array{Tuple,1}, ::Array{Int64,1}) at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/Blocking.jl:39
+ [3] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:57
+ [4] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:197
+ [5] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [6] include(::Module, ::String) at ./Base.jl:368
+ [7] exec_options(::Base.JLOptions) at ./client.jl:296
+ [8] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:197

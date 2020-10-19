@@ -5,6 +5,7 @@
 #SBATCH --time=72:00:00
 #SBATCH --output=../complex_net_proposal/log/production-%j.qlog
 #SBATCH -p bii
+module load julia/1.5.0
 
 directory_structure="../complex_net_proposal/experiment_networks/"
 input_paths=("astroph.edges" "wiki.edges" "fb-pages-politician.edges" "primary-school-proximity.edges" "slashdot0811.edges")
