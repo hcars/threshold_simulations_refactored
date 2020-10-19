@@ -14,8 +14,8 @@ function main()
 		num_seeds = parse(Int, ARGS[4])
 		random_seed = parse(Int, ARGS[5])
 		out_file_name = ARGS[6]
-		thresholds = [3,4]
-		budgets=.05:.05:.5
+		thresholds = [2,3,4]
+		budgets=append!([.0005, .001], collect(.005:.005:.12))
 		graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
 		graph = SimpleGraph(graph_di)
 		Random.seed!(random_seed)
@@ -24,13 +24,14 @@ function main()
 			initialize_csv(out_file_name, blocking_methods)
 		end
 		for i=1:repetitions
-				model = DiffusionModel.MultiDiffusionModelConstructor(graph)
-				if seeding_method == "centola"
-					seeds = choose_by_centola(model, num_seeds)
-				elseif seeding_method == "random_k_core"
-					seeds = choose_random_k_core(model, 20, num_seeds)
-				end
+			model = DiffusionModel.MultiDiffusionModelConstructor(graph)
+			if seeding_method == "centola"
+				seeds = choose_by_centola(model, num_seeds)
+			elseif seeding_method == "random_k_core"
+				seeds = choose_random_k_core(model, 20, num_seeds)
+			end		
 			for threshold in thresholds
+				state = rand(UInt)
 				model.θ_i = [UInt(threshold), UInt(threshold)]
 				DiffusionModel.set_initial_conditions!(model, seeds)
 				seed_set_1 = Set{Int}()
@@ -50,6 +51,8 @@ function main()
 				no_blocking_results = DiffusionModel.full_run(model)
 				no_block_summary = DiffusionModel.getStateSummary(model)
 				for budget in budgets
+						Random.seed!(state)
+
 						curr_budget = floor(nv(model.network)*budget)
 						total_infected_1 = no_block_summary[2] + no_block_summary[4]
 						total_infected = sum(no_block_summary[2:4])
@@ -183,12 +186,12 @@ function high_degree_blocking(model, budgets::Vector{Int}, seed_set::Tuple)
 end
 
 
-function random_blocking(model, budgets::Vector{Int}, seed_set::Tuple)
+function random_blocking(model, budgets::Vector{Int}, exclude::Tuple)
 	blockers = Vector{Set{Int}}(undef, length(budgets))
 	for i=1:length(blockers)
 		curr_set = Set{Int}()
 		curr_budget = budgets[i]
-		curr_seeds = seed_set[i]
+		curr_seeds = exclude[i]
 		while length(curr_set) < curr_budget
 			curr_selection = rand(vertices(model.network))
 			if curr_selection ∉ curr_seeds

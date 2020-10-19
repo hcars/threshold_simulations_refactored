@@ -12,7 +12,7 @@ input_paths=("astroph.edges" "wiki.edges" "fb-pages-politician.edges" "primary-s
 
 output_append="../complex_net_proposal/experiment_results/results_run_mcich.csv"
 
-random_seed=8886
+random_seed=20591
 
 repititions=50
 
@@ -25,3 +25,6 @@ do
    full+=$base
    julia main.jl $full $repititions $seed_method $num_seeds $random_seed $output_append
 done
+
+sed -r -i  "s/.*experiment_networks\///g" $output_append
+sed -i 's/\.edges//g' $output_append
