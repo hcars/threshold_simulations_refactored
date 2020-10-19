@@ -32,6 +32,7 @@ module DiffusionModel
 
 	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Set{Int})
 		nodeStates = Dict{Int, UInt8}()
+		model.blockedDict =  Dict{Int, UInt8}()
 		for seed in seeds
 			infection = rand(1:3)
 			get!(nodeStates, seed, infection)
@@ -42,6 +43,7 @@ module DiffusionModel
 
 	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Tuple{Set{Int}, Set{Int}})
 		nodeStates = Dict{Int, UInt8}()
+		model.blockedDict =  Dict{Int, UInt8}()
 		for i=1:length(seeds)
 			for seed in seeds[i]
 				value = get!(nodeStates, seed, 0)

@@ -15,7 +15,7 @@ function main()
 		num_seeds = parse(Int, ARGS[4])
 		random_seed = parse(Int, ARGS[5])
 		out_file_name = ARGS[6]
-		thresholds = [2,3,4]
+		thresholds = [3,4]
 		budgets=.05:.05:.5
 		graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
 		graph = SimpleGraph(graph_di)
@@ -47,6 +47,8 @@ function main()
 					end
 				end
 				no_blocking_results = DiffusionModel.full_run(model)
+				DiffusionModel.set_initial_conditions!(model, (seed_set_1, seed_set_2))
+				no_blocking_results = DiffusionModel.full_run(model)
 				no_block_summary = DiffusionModel.getStateSummary(model)
 				for budget in budgets
 						curr_budget = floor(nv(model.network)*budget)
@@ -60,21 +62,20 @@ function main()
 
 						
 						blockers_mcich = Blocking.mcich(model, (seed_set_1, seed_set_2), no_blocking_results, selected_budgets)	
-						DiffusionModel.set_blocking!(model, blockers_mcich)
 						DiffusionModel.set_initial_conditions!(model, (seed_set_1, seed_set_2))
+						DiffusionModel.set_blocking!(model, blockers_mcich)
 						DiffusionModel.full_run(model)
 						blocking_summary_mcich = DiffusionModel.getStateSummary(model)
 
-
 						blockers_random = random_blocking(model, selected_budgets, (seed_set_1, seed_set_2))	
-						DiffusionModel.set_blocking!(model, blockers_random)
 						DiffusionModel.set_initial_conditions!(model, (seed_set_1, seed_set_2))
+						DiffusionModel.set_blocking!(model, blockers_random)
 						DiffusionModel.full_run(model)
 						blocking_summary_random = DiffusionModel.getStateSummary(model)
 
 						blockers_degree = high_degree_blocking(model, selected_budgets, (seed_set_1, seed_set_2))	
-						DiffusionModel.set_blocking!(model, blockers_degree)
 						DiffusionModel.set_initial_conditions!(model, (seed_set_1, seed_set_2))
+						DiffusionModel.set_blocking!(model, blockers_degree)
 						DiffusionModel.full_run(model)
 						blocking_summary_degree = DiffusionModel.getStateSummary(model)
 
