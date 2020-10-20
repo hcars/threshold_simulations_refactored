@@ -145,7 +145,7 @@ module Blocking
     function coverage_optimal(model, available_to_block::Array{Int}, to_block::Dict{Int, UInt}, budget::Int, optimizer)
         lp = Model(optimizer)
         number_sets = length(available_to_block)
-        y_j = zeros(UInt8, 1, number_sets)
+        y_j = zeros(UInt, 1, number_sets)
         set_to_block = Vector{Int}(undef, length(to_block))
         i = 1
         for node in keys(to_block)
@@ -153,7 +153,7 @@ module Blocking
             i += 1
         end
         number_to_block = length(set_to_block)
-        x_i = zeros(UInt8, 1, number_to_block)
+        x_i = zeros(UInt, 1, number_to_block)
         @variable(lp, x_i[1:number_to_block])
         @variable(lp, y_j[1:number_sets])
         @constraint(lp, sum(y_j) <= budget)
@@ -241,7 +241,7 @@ module Blocking
         #         for node 
         #     end
         # end
-        blockers = Dict{Int, UInt8}()
+        blockers = Dict{Int, UInt}()
         for j=1:2
             for i=1:length(num_vertices)
                 if value.(z_vars[i, j]) == 1
