@@ -9,30 +9,30 @@ module DiffusionModel
 
 	mutable struct MultiDiffusionModel 
 		network::SimpleGraph
-		nodeStates::Dict{Int,UInt8}
+		nodeStates::Dict{Int,UInt}
 		thresholdStates::Dict{Int,UInt32}
-		blockedDict::Dict{Int, UInt8}
+		blockedDict::Dict{Int, UInt}
 		θ_i :: Vector{UInt32}
 		t::UInt32
 	end
 
 	function MultiDiffusionModelConstructor(graph)
-		nodeStates = Dict{Int, UInt8}()
-		blockedDict = Dict{Int, UInt8}()
+		nodeStates = Dict{Int, UInt}()
+		blockedDict = Dict{Int, UInt}()
 		thresholdStates = Dict{Int, UInt32}()
 		return MultiDiffusionModel(graph, nodeStates, thresholdStates, blockedDict, [UInt32(2), UInt32(2)], UInt(0))
 	end
 
 	function MultiDiffusionModelConstructor(graph, θ_i::Vector{UInt32})
-		nodeStates = Dict{Int, UInt8}()
-		blockedDict = Dict{Int, UInt8}()
+		nodeStates = Dict{Int, UInt}()
+		blockedDict = Dict{Int, UInt}()
 		thresholdStates = Dict{Int, UInt32}()
 		return MultiDiffusionModel(graph, nodeStates, thresholdStates, blockedDict, θ_i, UInt(0))
 	end
 
 	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Set{Int})
-		nodeStates = Dict{Int, UInt8}()
-		model.blockedDict =  Dict{Int, UInt8}()
+		nodeStates = Dict{Int, UInt}()
+		model.blockedDict =  Dict{Int, UInt}()
 		for seed in seeds
 			infection = rand(1:3)
 			get!(nodeStates, seed, infection)
@@ -42,8 +42,8 @@ module DiffusionModel
 	end
 
 	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Tuple{Set{Int}, Set{Int}})
-		nodeStates = Dict{Int, UInt8}()
-		model.blockedDict =  Dict{Int, UInt8}()
+		nodeStates = Dict{Int, UInt}()
+		model.blockedDict =  Dict{Int, UInt}()
 		for i=1:length(seeds)
 			for seed in seeds[i]
 				value = get!(nodeStates, seed, 0)
@@ -58,7 +58,7 @@ module DiffusionModel
 	end
 
 	function set_blocking!(model::MultiDiffusionModel, blockers::Vector)
-		blockingDict = Dict{Int, UInt8}()
+		blockingDict = Dict{Int, UInt}()
 		for i=1:length(blockers)
 			curr_set = blockers[i]
 			for node in curr_set
