@@ -1,0 +1,34 @@
+ERROR: LoadError: InexactError: trunc(UInt8, 256)
+Stacktrace:
+ [1] throw_inexacterror(::Symbol, ::Type{UInt8}, ::Int64) at ./boot.jl:558
+ [2] checked_trunc_uint at ./boot.jl:588 [inlined]
+ [3] toUInt8 at ./boot.jl:650 [inlined]
+ [4] UInt8 at ./boot.jl:710 [inlined]
+ [5] convert at ./number.jl:7 [inlined]
+ [6] get!(::Base.var"#142#143"{Int64}, ::Dict{Int64,UInt8}, ::Int64) at ./dict.jl:450
+ [7] get!(::Dict{Int64,UInt8}, ::Int64, ::Int64) at ./abstractdict.jl:502
+ [8] set_blocking!(::Main.DiffusionModel.MultiDiffusionModel, ::Array{Any,1}) at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/DiffusionModel.jl:68
+ [9] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:68
+ [10] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:206
+ [11] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [12] include(::Module, ::String) at ./Base.jl:368
+ [13] exec_options(::Base.JLOptions) at ./client.jl:296
+ [14] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:206
+ERROR: LoadError: InexactError: trunc(UInt8, 256)
+Stacktrace:
+ [1] throw_inexacterror(::Symbol, ::Type{UInt8}, ::Int64) at ./boot.jl:558
+ [2] checked_trunc_uint at ./boot.jl:588 [inlined]
+ [3] toUInt8 at ./boot.jl:650 [inlined]
+ [4] UInt8 at ./boot.jl:710 [inlined]
+ [5] convert at ./number.jl:7 [inlined]
+ [6] get!(::Base.var"#142#143"{Int64}, ::Dict{Int64,UInt8}, ::Int64) at ./dict.jl:450
+ [7] get!(::Dict{Int64,UInt8}, ::Int64, ::Int64) at ./abstractdict.jl:502
+ [8] set_blocking!(::Main.DiffusionModel.MultiDiffusionModel, ::Array{Any,1}) at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/DiffusionModel.jl:68
+ [9] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:68
+ [10] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:206
+ [11] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [12] include(::Module, ::String) at ./Base.jl:368
+ [13] exec_options(::Base.JLOptions) at ./client.jl:296
+ [14] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:206
