@@ -1,5 +1,6 @@
 using LightGraphs;
 using GraphIO;
+using Gurobi;
 using Random;
 using Test;
 include("./DiffusionModel.jl")
@@ -63,7 +64,7 @@ function main()
 
 
 						
-						blockers_mcich = Blocking.mcich(model, (seed_set_1, seed_set_2), no_blocking_results, selected_budgets)	
+						blockers_mcich = Blocking.mcich_optimal(model, (seed_set_1, seed_set_2), no_blocking_results, selected_budgets, Gurobi.Optimizer)	
 						DiffusionModel.set_initial_conditions!(model, (seed_set_1, seed_set_2))
 						DiffusionModel.set_blocking!(model, blockers_mcich)
 						DiffusionModel.full_run(model)

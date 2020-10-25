@@ -1,6 +1,6 @@
 
 module Blocking
-
+    using Gurobi;
     using LightGraphs;
     using JuMP;
     include("./DiffusionModel.jl")
