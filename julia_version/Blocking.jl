@@ -1,6 +1,5 @@
 
 module Blocking
-    using Gurobi;
     using LightGraphs;
     using JuMP;
     include("./DiffusionModel.jl")
@@ -98,7 +97,7 @@ module Blocking
             candidate_blocker = Vector{Int}()
             unblocked_min = Inf 
             seed_nodes = seed_sets[i]
-            for j=1:length(updates)
+            for j=1:(length(updates) - 1)
                 find_blocking = updates[j][i]
                 if isempty(find_blocking)
                     break
@@ -136,7 +135,10 @@ module Blocking
                     unblocked_min = unblocked
                 end
             end
-        append!(blockings, [candidate_blocker])
+        append!(blockings, [collect(candidate_blocker)])
+        if length(blockings) < budget && i < length(budgets)
+            budgets[i+1] += budget - length(blockings)
+        end
         end
         return blockings
     end

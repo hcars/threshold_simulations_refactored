@@ -129,8 +129,16 @@ full_run_3 = DiffusionModel.full_run(model_3)
 blocker = Blocking.mcich(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, [1, 1])
 @test blocker[1] == [2]
 @test blocker[2] == [2]
-DiffusionModel.set_blocking!(model_3,  blocker)
 DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
+DiffusionModel.set_blocking!(model_3,  blocker)
 full_run_3 = DiffusionModel.full_run(model_3)
 states_3 = DiffusionModel.getStateSummary(model_3)
-@test isempty(intersect([4,5,8,9,10,11], keys(model_3.nodeStates)))
+@test isempty(intersect([4, 5, 8, 9, 10, 11], keys(model_3.nodeStates)))
+blocker = Blocking.mcich_optimal(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, [1, 1], GLPK.Optimizer)
+@test blocker[1] == [3]
+@test blocker[2] == [3]
+DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
+DiffusionModel.set_blocking!(model_3,  blocker)
+full_run_3 = DiffusionModel.full_run(model_3)
+states_3 = DiffusionModel.getStateSummary(model_3)
+@test isempty(intersect([3, 6,7, 12, 13], keys(model_3.nodeStates)))
