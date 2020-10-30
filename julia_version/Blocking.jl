@@ -146,6 +146,7 @@ module Blocking
 
     function coverage_optimal(model, available_to_block::Array{Int}, to_block::Dict{Int, UInt}, budget::Int, optimizer)
         lp = Model(optimizer)
+	set_optimizer_attribute(lp, "TimeLimit", 3600)
         number_sets = length(available_to_block)
         y_j = zeros(UInt, 1, number_sets)
         set_to_block = Vector{Int}(undef, length(to_block))

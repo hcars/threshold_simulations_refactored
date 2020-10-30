@@ -1,0 +1,8 @@
+If your Python version is not 3.7, you need to run:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python<version>_utf32
+Python 2.7:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python2.7_utf32
+Python 3.6:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python3.6_utf32
+/var/spool/slurm/slurmd/job17867747/slurm_script: line 29: unexpected EOF while looking for matching `"'
+/var/spool/slurm/slurmd/job17867747/slurm_script: line 31: syntax error: unexpected end of file
