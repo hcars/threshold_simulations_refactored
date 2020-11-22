@@ -71,7 +71,7 @@ module DiffusionModel
 		model.blockedDict = blockingDict
 	end
 
-	function iterate!(model::MultiDiffusionModel)
+	function iterate!(model::MultiDiffusionModel)::Tuple
 		"""
 		This completes a one time step update.
 		"""

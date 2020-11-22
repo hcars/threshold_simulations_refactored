@@ -1,4 +1,3 @@
-
 module Blocking
     using LightGraphs;
     using JuMP;
@@ -48,7 +47,7 @@ module Blocking
                         unblocked_min = unblocked   
                     end
                 end  
-            append!(blockings, [candidate_blocker])
+            append!(blockings, [collect(candidate_blocker)])
             if length(blockings) < budget && i < length(budgets)
                 budgets[i+1] += budget - length(blockings)
             end
@@ -146,7 +145,7 @@ module Blocking
 
     function coverage_optimal(model, available_to_block::Array{Int}, to_block::Dict{Int, UInt}, budget::Int, optimizer)
         lp = Model(optimizer)
-	set_optimizer_attribute(lp, "TimeLimit", 3600)
+        set_time_limit_sec(lp, 3000)
         number_sets = length(available_to_block)
         y_j = zeros(UInt, 1, number_sets)
         set_to_block = Vector{Int}(undef, length(to_block))
@@ -202,8 +201,9 @@ module Blocking
                 end
             end
         end
-        num_vertices = nv(model.network)
         net_vertices = collect(Int, vertices(model.network))
+        num_vertices = length(net_vertices)
+
         x_vars = zeros(Int, num_vertices, 2)
         y_vars = zeros(Int, num_vertices, 2)
         z_vars = zeros(Int, num_vertices, 2)
@@ -211,7 +211,15 @@ module Blocking
         @variable(lp, y_vars[1:num_vertices, 1:2])
         @variable(lp, z_vars[1:num_vertices, 1:2])
 
-        for i=1:length(net_vertices)
+        for j=1:2
+            for i=1:num_vertices
+                set_binary(x_vars[i,j])
+                set_binary(y_vars[i,j])
+                set_binary(z_vars[i,j])
+            end
+        end
+
+        for i=1:num_vertices
             node = net_vertices[i]
             state = get!(model.nodeStates, node, 0)
             if node in seed_nodes
@@ -221,7 +229,7 @@ module Blocking
                     @constraint(lp, y_vars[i,2] == 1)
                 elseif state == 3
                     @constraint(lp, y_vars[i,1] == 1)
-                    @constraint(lp, y_vars[i,2] == 2)
+                    @constraint(lp, y_vars[i,2] == 1)
                 end
             end
             neighbors_node = neighbors(model.network, node)
@@ -231,22 +239,17 @@ module Blocking
                 append!(neighbor_indices, [findfirst(x->x==neighbor,net_vertices)])
             end
             for j=1:2
-                @constraint(lp, node_degree*x_vars[i,j] + sum(y_vars[k, j] for k in neighbor_indices) <= node_degree + get(model.thresholdStates, node, model.θ_i[i]) - 1)
+                @constraint(lp, node_degree*x_vars[i,j] + sum(y_vars[k, j] for k in neighbor_indices) <= node_degree + get(model.thresholdStates, node, model.θ_i[j]) - 1)
                 @constraint(lp, x_vars[i, j] + y_vars[i, j] + z_vars[i, j] == 1)
             end
         end
         @constraint(lp, sum(z_vars[i, 1] + z_vars[i, 2] for i=1:num_vertices) <= budget)
         @objective(lp, Min, sum(y_vars[i, 1] + y_vars[i, 2] for i=1:num_vertices))
         optimize!(lp)
-        # for j=1:2
-        #     for k=1:num_vertices
-        #         @constraint(lp, x_vars[k, j] + y_vars[k, j] + z_vars[k, j] == 1)
-        #         for node 
-        #     end
-        # end
+
         blockers = Dict{Int, UInt}()
         for j=1:2
-            for i=1:length(num_vertices)
+            for i=1:num_vertices
                 if value.(z_vars[i, j]) == 1
                     state = get(blockers, net_vertices[i], 0)
                     state += j
@@ -255,7 +258,7 @@ module Blocking
                 end
             end
         end
-        return blockers, number_to_block - objective_value(lp)
+        return blockers
     end
 
 end

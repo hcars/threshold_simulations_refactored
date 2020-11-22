@@ -9,12 +9,15 @@ include("./Blocking.jl")
 
 
 function main()
+		# Parse CLAs
 		name = ARGS[1]
 		repetitions = parse(Int, ARGS[2])
 		seeding_method = ARGS[3]
 		num_seeds = parse(Int, ARGS[4])
 		random_seed = parse(Int, ARGS[5])
 		out_file_name = ARGS[6]
+		blocking_method = ARGS[7]
+
 		thresholds = [2,3,4]
 		budgets=append!([.0005, .001], collect(.005:.005:.12))
 		graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
@@ -35,6 +38,7 @@ function main()
 				state = rand(UInt)
 				model.θ_i = [UInt(threshold), UInt(threshold)]
 				DiffusionModel.set_initial_conditions!(model, seeds)
+
 				seed_set_1 = Set{Int}()
 				seed_set_2 = Set{Int}()
 				for node in keys(model.nodeStates)
@@ -47,8 +51,10 @@ function main()
 						union!(seed_set_2, [node])
 					end
 				end
+				seed_tup = (seed_set_1, seed_set_2)
+
 				no_blocking_results = DiffusionModel.full_run(model)
-				DiffusionModel.set_initial_conditions!(model, (seed_set_1, seed_set_2))
+				DiffusionModel.set_initial_conditions!(model, seed_tup)
 				no_blocking_results = DiffusionModel.full_run(model)
 				no_block_summary = DiffusionModel.getStateSummary(model)
 				for budget in budgets
@@ -62,37 +68,47 @@ function main()
 						budget_2 = Int(curr_budget - budget_1)
 						selected_budgets =  [budget_1, budget_2]
 
-
 						
-						blockers_mcich = Blocking.mcich_optimal(model, (seed_set_1, seed_set_2), no_blocking_results, selected_budgets, Gurobi.Optimizer)	
-						DiffusionModel.set_initial_conditions!(model, (seed_set_1, seed_set_2))
-						DiffusionModel.set_blocking!(model, blockers_mcich)
+						# Find the smart blocking method.
+						if blocking_method == "MCICH_SMC"
+							blockers_smart = Blocking.mcich(model, seed_tup, no_blocking_results, selected_budgets)
+						elseif blocking_method == "MCICH_ILP"
+							blockers_smart = Blocking.mcich_optimal(model, seed_tup, no_blocking_results, selected_budgets, Gurobi.Optimizer)	
+						elseif blockers_smart == "ILP_Glob_Opt"
+							blockers_smart = Blocking.ilp_optimal(model, seeds, no_blocking_results, curr_budget, Gurobi.Optimizer)
+						else
+							throw(ErrorException("No smart blocking method is specified"))
+						end
+
+						DiffusionModel.set_initial_conditions!(model, seed_tup)
+						DiffusionModel.set_blocking!(model, blockers_smart)
+
 						DiffusionModel.full_run(model)
 						blocking_summary_mcich = DiffusionModel.getStateSummary(model)
 
-						blockers_random = random_blocking(model, selected_budgets, (seed_set_1, seed_set_2))	
-						DiffusionModel.set_initial_conditions!(model, (seed_set_1, seed_set_2))
+						blockers_random = random_blocking(model, selected_budgets, seed_tup)	
+						DiffusionModel.set_initial_conditions!(model, seed_tup)
 						DiffusionModel.set_blocking!(model, blockers_random)
 						DiffusionModel.full_run(model)
 						blocking_summary_random = DiffusionModel.getStateSummary(model)
 
-						blockers_degree = high_degree_blocking(model, selected_budgets, (seed_set_1, seed_set_2))	
-						DiffusionModel.set_initial_conditions!(model, (seed_set_1, seed_set_2))
+						blockers_degree = high_degree_blocking(model, selected_budgets, seed_tup)	
+						DiffusionModel.set_initial_conditions!(model, seed_tup)
 						DiffusionModel.set_blocking!(model, blockers_degree)
 						DiffusionModel.full_run(model)
 						blocking_summary_degree = DiffusionModel.getStateSummary(model)
 
 						blocking_summaries = [no_block_summary, blocking_summary_mcich, blocking_summary_random, blocking_summary_degree]
-						
-						append_results(out_file_name, blocking_summaries, string(num_seeds), string(threshold), seeding_method, name, string(curr_budget))
+						metadata = Vector{String}[name, seeding_method, string(threshold), string(num_seeds), string(curr_budget), string(blocking_method)]
+						append_results(out_file_name, blocking_summaries, metadata)
 				end
 			end
 		end
 end
 
 
-function initialize_csv(filename::String, blocking_methods::Vector{String})
-	header = "network_name,seed_method,threshold,seed_size,budget_total,"
+function initialize_csv(filename::String, blocking_methods::Vector{String})::Nothing
+	header = "network_name,seed_method,threshold,seed_size,budget_total,smart_method"
 	for i=1:length(blocking_methods)
 		for j=0:3
 			curr_count_name = blocking_methods[i] * '_' * string(j)
@@ -110,8 +126,12 @@ end
 
 
 
-function append_results(filename::String, summaries::Vector, seed_size::String, threshold::String, seed_method::String, net_name::String, budget_total::String)
-	result_string = net_name * ',' * seed_method * ',' * threshold * ',' * seed_size * ',' * budget_total * ','
+function append_results(filename::String, summaries::Vector, metadata::Vector{String})::Nothing
+	result_string = ""
+	for data in metadata
+		result_string * data * ','
+	end
+	result_string = net_name * ',' * seed_method * ',' * threshold * ',' * seed_size * ',' * budget_total * ',' * smart_method * ','
 	for i=1:length(summaries)
 		curr_array = summaries[i]
 		for j=1:4
@@ -129,7 +149,7 @@ function append_results(filename::String, summaries::Vector, seed_size::String, 
 end
 
 
-function choose_by_centola(model, num_seeds::Int)
+function choose_by_centola(model, num_seeds::Int)::Set{Int}
 	chosen_vertex = rand(vertices(model.network))
 	seeds = Set{Int}([chosen_vertex])
 	while length(seeds) < num_seeds
@@ -144,7 +164,7 @@ function choose_by_centola(model, num_seeds::Int)
 	return seeds
 end
 
-function choose_random_k_core(model, k::Int, num_seeds::Int)
+function choose_random_k_core(model, k::Int, num_seeds::Int)::Set{Int}
 	k_core_nodes = find_k_core(model.network, k)
 	choices = Set{Int}()
 	while length(choices) < num_seeds
@@ -155,7 +175,7 @@ function choose_random_k_core(model, k::Int, num_seeds::Int)
 end
 
 
-function find_k_core(network, k::Int)
+function find_k_core(network, k::Int)::Set{Int}
 	k_cores = Set{Int}()
 	for node in vertices(network)
 		if degree(network, node) >= k
@@ -165,9 +185,9 @@ function find_k_core(network, k::Int)
 	return k_cores
 end
 
-function high_degree_blocking(model, budgets::Vector{Int}, seed_set::Tuple)
+function high_degree_blocking(model, budgets::Vector{Int}, seed_set::Tuple)::Vector{Set{Int}}
 	my_degree(x) = degree(model.network, x)
-	high_degree_nodes = sort(vertices(model.network), by=my_degree, rev= true)
+	high_degree_nodes = sort(vertices(model.network), by=my_degree, rev=true)
 	blockers = Vector{Set{Int}}(undef, length(budgets))
 	for i=1:length(blockers)
 		curr_set = Set{Int}()
@@ -187,7 +207,7 @@ function high_degree_blocking(model, budgets::Vector{Int}, seed_set::Tuple)
 end
 
 
-function random_blocking(model, budgets::Vector{Int}, exclude::Tuple)
+function random_blocking(model, budgets::Vector{Int}, exclude::Tuple)::Vector{Set{Int}}
 	blockers = Vector{Set{Int}}(undef, length(budgets))
 	for i=1:length(blockers)
 		curr_set = Set{Int}()
