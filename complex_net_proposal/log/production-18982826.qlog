@@ -1,0 +1,86 @@
+If your Python version is not 3.7, you need to run:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python<version>_utf32
+Python 2.7:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python2.7_utf32
+Python 3.6:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python3.6_utf32
+ERROR: LoadError: MethodError: Cannot `convert` an object of type String to an object of type Array{String,1}
+Closest candidates are:
+  convert(::Type{Array{String,1}}, !Matched::LibGit2.StrArrayStruct) at /buildworker/worker/package_linux64/build/usr/share/julia/stdlib/v1.5/LibGit2/src/strarray.jl:13
+  convert(::Type{Array{T,N}}, !Matched::StaticArrays.SizedArray{S,T,N,M} where M) where {T, S, N} at /home/hlc5v/.julia/packages/StaticArrays/l7lu2/src/SizedArray.jl:72
+  convert(::Type{T}, !Matched::AbstractArray) where T<:Array at array.jl:554
+  ...
+Stacktrace:
+ [1] setindex!(::Array{Array{String,1},1}, ::String, ::Int64) at ./array.jl:847
+ [2] getindex(::Type{Array{String,1}}, ::String, ::String, ::String, ::String, ::Vararg{Any,N} where N) at ./array.jl:408
+ [3] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:102
+ [4] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+ [5] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [6] include(::Module, ::String) at ./Base.jl:368
+ [7] exec_options(::Base.JLOptions) at ./client.jl:296
+ [8] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+ERROR: LoadError: MethodError: Cannot `convert` an object of type String to an object of type Array{String,1}
+Closest candidates are:
+  convert(::Type{Array{String,1}}, !Matched::LibGit2.StrArrayStruct) at /buildworker/worker/package_linux64/build/usr/share/julia/stdlib/v1.5/LibGit2/src/strarray.jl:13
+  convert(::Type{Array{T,N}}, !Matched::StaticArrays.SizedArray{S,T,N,M} where M) where {T, S, N} at /home/hlc5v/.julia/packages/StaticArrays/l7lu2/src/SizedArray.jl:72
+  convert(::Type{T}, !Matched::AbstractArray) where T<:Array at array.jl:554
+  ...
+Stacktrace:
+ [1] setindex!(::Array{Array{String,1},1}, ::String, ::Int64) at ./array.jl:847
+ [2] getindex(::Type{Array{String,1}}, ::String, ::String, ::String, ::String, ::Vararg{Any,N} where N) at ./array.jl:408
+ [3] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:102
+ [4] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+ [5] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [6] include(::Module, ::String) at ./Base.jl:368
+ [7] exec_options(::Base.JLOptions) at ./client.jl:296
+ [8] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+ERROR: LoadError: MethodError: Cannot `convert` an object of type String to an object of type Array{String,1}
+Closest candidates are:
+  convert(::Type{Array{String,1}}, !Matched::LibGit2.StrArrayStruct) at /buildworker/worker/package_linux64/build/usr/share/julia/stdlib/v1.5/LibGit2/src/strarray.jl:13
+  convert(::Type{Array{T,N}}, !Matched::StaticArrays.SizedArray{S,T,N,M} where M) where {T, S, N} at /home/hlc5v/.julia/packages/StaticArrays/l7lu2/src/SizedArray.jl:72
+  convert(::Type{T}, !Matched::AbstractArray) where T<:Array at array.jl:554
+  ...
+Stacktrace:
+ [1] setindex!(::Array{Array{String,1},1}, ::String, ::Int64) at ./array.jl:847
+ [2] getindex(::Type{Array{String,1}}, ::String, ::String, ::String, ::String, ::Vararg{Any,N} where N) at ./array.jl:408
+ [3] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:102
+ [4] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+ [5] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [6] include(::Module, ::String) at ./Base.jl:368
+ [7] exec_options(::Base.JLOptions) at ./client.jl:296
+ [8] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+ERROR: LoadError: MethodError: Cannot `convert` an object of type String to an object of type Array{String,1}
+Closest candidates are:
+  convert(::Type{Array{String,1}}, !Matched::LibGit2.StrArrayStruct) at /buildworker/worker/package_linux64/build/usr/share/julia/stdlib/v1.5/LibGit2/src/strarray.jl:13
+  convert(::Type{Array{T,N}}, !Matched::StaticArrays.SizedArray{S,T,N,M} where M) where {T, S, N} at /home/hlc5v/.julia/packages/StaticArrays/l7lu2/src/SizedArray.jl:72
+  convert(::Type{T}, !Matched::AbstractArray) where T<:Array at array.jl:554
+  ...
+Stacktrace:
+ [1] setindex!(::Array{Array{String,1},1}, ::String, ::Int64) at ./array.jl:847
+ [2] getindex(::Type{Array{String,1}}, ::String, ::String, ::String, ::String, ::Vararg{Any,N} where N) at ./array.jl:408
+ [3] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:102
+ [4] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+ [5] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [6] include(::Module, ::String) at ./Base.jl:368
+ [7] exec_options(::Base.JLOptions) at ./client.jl:296
+ [8] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+ERROR: LoadError: MethodError: Cannot `convert` an object of type String to an object of type Array{String,1}
+Closest candidates are:
+  convert(::Type{Array{String,1}}, !Matched::LibGit2.StrArrayStruct) at /buildworker/worker/package_linux64/build/usr/share/julia/stdlib/v1.5/LibGit2/src/strarray.jl:13
+  convert(::Type{Array{T,N}}, !Matched::StaticArrays.SizedArray{S,T,N,M} where M) where {T, S, N} at /home/hlc5v/.julia/packages/StaticArrays/l7lu2/src/SizedArray.jl:72
+  convert(::Type{T}, !Matched::AbstractArray) where T<:Array at array.jl:554
+  ...
+Stacktrace:
+ [1] setindex!(::Array{Array{String,1},1}, ::String, ::Int64) at ./array.jl:847
+ [2] getindex(::Type{Array{String,1}}, ::String, ::String, ::String, ::String, ::Vararg{Any,N} where N) at ./array.jl:408
+ [3] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:102
+ [4] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+ [5] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [6] include(::Module, ::String) at ./Base.jl:368
+ [7] exec_options(::Base.JLOptions) at ./client.jl:296
+ [8] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227

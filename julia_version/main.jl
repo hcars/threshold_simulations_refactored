@@ -99,7 +99,7 @@ function main()
 						blocking_summary_degree = DiffusionModel.getStateSummary(model)
 
 						blocking_summaries = [no_block_summary, blocking_summary_mcich, blocking_summary_random, blocking_summary_degree]
-						metadata = Vector{String}[name, seeding_method, string(threshold), string(num_seeds), string(curr_budget), string(blocking_method)]
+						metadata = [name, seeding_method, string(threshold), string(num_seeds), string(curr_budget), string(blocking_method)]
 						append_results(out_file_name, blocking_summaries, metadata)
 				end
 			end
@@ -107,7 +107,7 @@ function main()
 end
 
 
-function initialize_csv(filename::String, blocking_methods::Vector{String})::Nothing
+function initialize_csv(filename::String, blocking_methods)::Nothing
 	header = "network_name,seed_method,threshold,seed_size,budget_total,smart_method"
 	for i=1:length(blocking_methods)
 		for j=0:3
@@ -126,12 +126,11 @@ end
 
 
 
-function append_results(filename::String, summaries::Vector, metadata::Vector{String})::Nothing
+function append_results(filename::String, summaries, metadata)
 	result_string = ""
 	for data in metadata
-		result_string * data * ','
+		result_string = result_string * data * ','
 	end
-	result_string = net_name * ',' * seed_method * ',' * threshold * ',' * seed_size * ',' * budget_total * ',' * smart_method * ','
 	for i=1:length(summaries)
 		curr_array = summaries[i]
 		for j=1:4

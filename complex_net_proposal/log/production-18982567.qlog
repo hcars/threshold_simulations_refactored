@@ -1,0 +1,24 @@
+If your Python version is not 3.7, you need to run:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python<version>_utf32
+Python 2.7:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python2.7_utf32
+Python 3.6:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python3.6_utf32
+ERROR: LoadError: MethodError: convert(::Type{Union{}}, ::Int64) is ambiguous. Candidates:
+  convert(::Type{Union{}}, x) in Base at essentials.jl:169
+  convert(::Type{T}, x::Number) where T<:Number in Base at number.jl:7
+  convert(::Type{T}, arg) where T<:VecElement in Base at baseext.jl:8
+  convert(::Type{T}, x::Number) where T<:AbstractChar in Base at char.jl:179
+Possible fix, define
+  convert(::Type{Union{}}, ::Number)
+Stacktrace:
+ [1] convert(::Type{Nothing}, ::Int64) at ./some.jl:34
+ [2] initialize_csv(::String, ::Array{String,1}) at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:122
+ [3] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:28
+ [4] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+ [5] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [6] include(::Module, ::String) at ./Base.jl:368
+ [7] exec_options(::Base.JLOptions) at ./client.jl:296
+ [8] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+slurmstepd: error: *** JOB 18982567 ON udc-aj36-3c0 CANCELLED AT 2020-11-21T19:15:49 ***

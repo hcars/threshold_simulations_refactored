@@ -1,0 +1,128 @@
+If your Python version is not 3.7, you need to run:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python<version>_utf32
+Python 2.7:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python2.7_utf32
+Python 3.6:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python3.6_utf32
+ERROR: LoadError: MethodError: convert(::Type{Union{}}, ::Int64) is ambiguous. Candidates:
+  convert(::Type{Union{}}, x) in Base at essentials.jl:169
+  convert(::Type{T}, x::Number) where T<:Number in Base at number.jl:7
+  convert(::Type{T}, arg) where T<:VecElement in Base at baseext.jl:8
+  convert(::Type{T}, x::Number) where T<:AbstractChar in Base at char.jl:179
+Possible fix, define
+  convert(::Type{Union{}}, ::Number)
+Stacktrace:
+ [1] convert(::Type{Nothing}, ::Int64) at ./some.jl:34
+ [2] initialize_csv(::String, ::Array{String,1}) at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:122
+ [3] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:28
+ [4] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+ [5] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [6] include(::Module, ::String) at ./Base.jl:368
+ [7] exec_options(::Base.JLOptions) at ./client.jl:296
+ [8] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:227
+Gurobi Optimizer version 9.0.1 build v9.0.1rc0 (linux64)
+Optimize a model with 633 rows, 350 columns and 2152 nonzeros
+Model fingerprint: 0x9ca99f01
+Variable types: 0 continuous, 350 integer (350 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 3e+01]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [1e+00, 3e+01]
+Found heuristic solution: objective -0.0000000
+Presolve removed 368 rows and 188 columns
+Presolve time: 0.01s
+Presolved: 265 rows, 162 columns, 1036 nonzeros
+Variable types: 0 continuous, 162 integer (162 binary)
+
+Root relaxation: objective 2.418167e+02, 109 iterations, 0.00 seconds
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0  241.81667    0   33   -0.00000  241.81667      -     -    0s
+H    0     0                     206.0000000  241.81667  17.4%     -    0s
+H    0     0                     209.0000000  241.81667  15.7%     -    0s
+     0     0  230.53889    0   80  209.00000  230.53889  10.3%     -    0s
+H    0     0                     214.0000000  230.53889  7.73%     -    0s
+     0     0  225.87500    0   51  214.00000  225.87500  5.55%     -    0s
+     0     0  225.38542    0   51  214.00000  225.38542  5.32%     -    0s
+     0     0  225.37500    0   50  214.00000  225.37500  5.32%     -    0s
+     0     0  218.27778    0   57  214.00000  218.27778  2.00%     -    0s
+     0     0  218.00000    0   63  214.00000  218.00000  1.87%     -    0s
+     0     0  217.98668    0   64  214.00000  217.98668  1.86%     -    0s
+     0     0  217.98550    0   64  214.00000  217.98550  1.86%     -    0s
+     0     0  216.28571    0   26  214.00000  216.28571  1.07%     -    0s
+
+Cutting planes:
+  Gomory: 11
+  Cover: 41
+  Clique: 35
+  MIR: 18
+  StrongCG: 3
+  Zero half: 4
+  RLT: 7
+
+Explored 1 nodes (297 simplex iterations) in 0.10 seconds
+Thread count was 32 (of 40 available processors)
+
+Solution count 4: 214 209 206 -0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 2.140000000000e+02, best bound 2.140000000000e+02, gap 0.0000%
+
+User-callback calls 122, time in user-callback 0.00 sec
+Gurobi Optimizer version 9.0.1 build v9.0.1rc0 (linux64)
+Optimize a model with 5675 rows, 3153 columns and 30330 nonzeros
+Model fingerprint: 0xb9ef2d58
+Variable types: 0 continuous, 3153 integer (3153 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 3e+02]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [1e+00, 3e+02]
+Found heuristic solution: objective -0.0000000
+Presolve removed 462 rows and 309 columns
+Presolve time: 0.12s
+Presolved: 5213 rows, 2844 columns, 26696 nonzeros
+Variable types: 0 continuous, 2844 integer (2842 binary)
+
+Root relaxation: objective 6.450472e+02, 897 iterations, 0.03 seconds
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0  645.04718    0  807   -0.00000  645.04718      -     -    0s
+H    0     0                     384.0000000  645.04718  68.0%     -    0s
+H    0     0                     401.0000000  645.04718  60.9%     -    0s
+     0     0  487.35170    0  524  401.00000  487.35170  21.5%     -    0s
+H    0     0                     409.0000000  487.35170  19.2%     -    0s
+     0     0  447.65439    0  332  409.00000  447.65439  9.45%     -    0s
+     0     0  443.29603    0  281  409.00000  443.29603  8.39%     -    0s
+     0     0  443.23479    0  284  409.00000  443.23479  8.37%     -    0s
+     0     0  417.41667    0  172  409.00000  417.41667  2.06%     -    0s
+     0     0  417.41667    0   40  409.00000  417.41667  2.06%     -    1s
+     0     0  417.41667    0   56  409.00000  417.41667  2.06%     -    1s
+H    0     0                     411.0000000  417.41667  1.56%     -    1s
+     0     0  414.00000    0    1  411.00000  414.00000  0.73%     -    1s
+     0     0     cutoff    0       411.00000  411.00000  0.00%     -    1s
+
+Cutting planes:
+  Gomory: 9
+  Cover: 40
+  MIR: 7
+  StrongCG: 4
+  Zero half: 8
+  RLT: 2
+
+Explored 1 nodes (3585 simplex iterations) in 1.34 seconds
+Thread count was 32 (of 40 available processors)
+
+Solution count 5: 411 409 401 ... -0
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 4.110000000000e+02, best bound 4.110000000000e+02, gap 0.0000%
+
+User-callback calls 532, time in user-callback 0.00 sec
+slurmstepd: error: *** JOB 18982568 ON udc-aj36-3c0 CANCELLED AT 2020-11-21T19:16:03 ***

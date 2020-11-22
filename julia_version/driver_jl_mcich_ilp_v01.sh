@@ -19,7 +19,7 @@ repititions=100
 
 seed_method=$1
 
-blocking_method = "MCICH_ILP"
+blocking_method="MCICH_ILP"
 
 num_seeds=20
 for base in ${input_paths[@]};

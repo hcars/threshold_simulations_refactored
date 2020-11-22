@@ -10,7 +10,6 @@ module load gurobi/9.0.1
 
 directory_structure="../complex_net_proposal/experiment_networks/"
 input_paths=("enron.giant.clean.uel" "astroph.edges" "wiki.edges" "fb-pages-politician.edges" "slashdot0811.edges")
-
 output_append="../complex_net_proposal/experiment_results/results_mcich_smc.csv"
 
 random_seed=20591
@@ -19,7 +18,7 @@ repititions=100
 
 seed_method=$1
 
-blocking_method = "MCICH_SMC"
+blocking_method="MCICH_SMC"
 
 num_seeds=20
 for base in ${input_paths[@]};
