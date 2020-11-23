@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #!/bin/bash
 #SBATCH --job-name=aw
 #SBATCH --nodes=1
