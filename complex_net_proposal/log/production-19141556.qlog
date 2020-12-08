@@ -1,0 +1,8 @@
+If your Python version is not 3.7, you need to run:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python<version>_utf32
+Python 2.7:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python2.7_utf32
+Python 3.6:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python3.6_utf32
+sed: can't read ../complex_net_proposal/experiment_results/results_mcich_smc.csv: No such file or directory
+sed: can't read ../complex_net_proposal/experiment_results/results_mcich_smc.csv: No such file or directory

@@ -130,12 +130,15 @@ module DiffusionModel
 	function full_run(model::MultiDiffusionModel)
 		updates = Vector{Tuple}()
 		updated = iterate!(model)
+		max_infections = nv(model.network)
 		append!(updates, [updated])
-		while !(isempty(updated[1]) && isempty(updated[2]))
+		iter_count = 0
+		while !(isempty(updated[1]) && isempty(updated[2]) && iter_count < max_infections)
 			updated = iterate!(model)
 			if !(isempty(updated[1]) && isempty(updated[2]))
 				append!(updates, [updated])
 			end
+			iter_count += 1
 		end
 		return updates
 	end

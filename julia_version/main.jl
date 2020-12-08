@@ -9,6 +9,8 @@ include("./Blocking.jl")
 
 
 function main()
+		
+		print(ARGS)
 		# Parse CLAs
 		name = ARGS[1]
 		repetitions = parse(Int, ARGS[2])
@@ -19,7 +21,7 @@ function main()
 		blocking_method = ARGS[7]
 
 		thresholds = [2,3,4]
-		budgets=append!([.0005, .001], collect(.005:.005:.12))
+		budgets=append!([.0005, .001], collect(.005:.005:.07))
 		graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
 		graph = SimpleGraph(graph_di)
 		Random.seed!(random_seed)
@@ -82,9 +84,11 @@ function main()
 
 						DiffusionModel.set_initial_conditions!(model, seed_tup)
 						DiffusionModel.set_blocking!(model, blockers_smart)
+                                                 
 
 						DiffusionModel.full_run(model)
 						blocking_summary_mcich = DiffusionModel.getStateSummary(model)
+                
 
 						blockers_random = random_blocking(model, selected_budgets, seed_tup)	
 						DiffusionModel.set_initial_conditions!(model, seed_tup)
@@ -101,14 +105,15 @@ function main()
 						blocking_summaries = [no_block_summary, blocking_summary_mcich, blocking_summary_random, blocking_summary_degree]
 						metadata = [name, seeding_method, string(threshold), string(num_seeds), string(curr_budget), string(blocking_method)]
 						append_results(out_file_name, blocking_summaries, metadata)
+						println("Append complete")
 				end
 			end
 		end
 end
 
 
-function initialize_csv(filename::String, blocking_methods)::Nothing
-	header = "network_name,seed_method,threshold,seed_size,budget_total,smart_method"
+function initialize_csv(filename::String, blocking_methods)
+	header = "network_name,seed_method,threshold,seed_size,budget_total,smart_method,"
 	for i=1:length(blocking_methods)
 		for j=0:3
 			curr_count_name = blocking_methods[i] * '_' * string(j)

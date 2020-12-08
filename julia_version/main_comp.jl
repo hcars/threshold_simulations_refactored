@@ -24,7 +24,7 @@ function main()
 		graph = SimpleGraph(graph_di)
 		Random.seed!(random_seed)
 		if !isfile(out_file_name)
-			blocking_methods=["no_block", "time_mcich_smc", "time_mcich_ilp", "time_ilp_opt", "mcich_smc", "mcich_ilp", "ilp_opt", "random", "degree"]
+			blocking_methods=["no_block", "mcich_smc", "mcich_ilp", "ilp_opt", "random", "degree"]
 			initialize_csv(out_file_name, blocking_methods)
 		end
 		for i=1:repetitions
@@ -34,8 +34,8 @@ function main()
 			elseif seeding_method == "random_k_core"
 				seeds = choose_random_k_core(model, 20, num_seeds)
 			end		
-			for threshold in thresholds
-				state = rand(UInt)
+		for threshold in thresholds
+	state = rand(UInt)
 				model.θ_i = [UInt(threshold), UInt(threshold)]
 				DiffusionModel.set_initial_conditions!(model, seeds)
 

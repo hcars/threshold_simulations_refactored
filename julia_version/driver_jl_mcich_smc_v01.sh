@@ -2,14 +2,14 @@
 #SBATCH --job-name=aw
 #SBATCH --nodes=1
 #SBATCH --mincpus=16
-#SBATCH --time=72:00:00
+#SBATCH --time=94:00:00
 #SBATCH --output=../complex_net_proposal/log/production-%j.qlog
 #SBATCH -p bii
 module load julia/1.5.0
 module load gurobi/9.0.1
 
 directory_structure="../complex_net_proposal/experiment_networks/"
-input_paths=("enron.giant.clean.uel" "astroph.edges" "wiki.edges" "fb-pages-politician.edges" "slashdot0811.edges")
+input_paths=("${2}")
 output_append="../complex_net_proposal/experiment_results/results_mcich_smc.csv"
 
 random_seed=20591

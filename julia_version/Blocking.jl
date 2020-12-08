@@ -61,11 +61,11 @@ module Blocking
         upperLimit = minimum([budget, length(available_to_block)])
         best_blocking = Vector{Int}(undef, upperLimit)
         for i=1:upperLimit
-            local best_node::Int
+            local best_node::Int 
             largest_intersection = 0
             for possible_node in keys(available_to_block)
                 unblocked_neighbors = intersect(get(available_to_block, possible_node, []), keys(to_block))
-                if length(unblocked_neighbors) > largest_intersection
+                if length(unblocked_neighbors) >= largest_intersection
                     largest_intersection = length(unblocked_neighbors)
                     best_node = possible_node
                 end
@@ -81,10 +81,10 @@ module Blocking
                     end
                 end
             end
+            delete!(available_to_block, best_node)
             if isempty(to_block)
                 break
             end
-            delete!(available_to_block, best_node)
         end
         return best_blocking, length(keys(to_block))
     end
@@ -145,7 +145,7 @@ module Blocking
 
     function coverage_optimal(model, available_to_block::Array{Int}, to_block::Dict{Int, UInt}, budget::Int, optimizer)
         lp = Model(optimizer)
-        set_time_limit_sec(lp, 3000)
+        set_time_limit_sec(lp, 6000)
         number_sets = length(available_to_block)
         y_j = zeros(UInt, 1, number_sets)
         set_to_block = Vector{Int}(undef, length(to_block))
@@ -165,6 +165,7 @@ module Blocking
         for y in y_j
             set_binary(y)
         end
+
         for i=1:length(set_to_block)
             node_to_block = set_to_block[i]
             neighbors_node = neighbors(model.network, node_to_block)

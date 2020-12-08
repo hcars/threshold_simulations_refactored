@@ -1,0 +1,7 @@
+If your Python version is not 3.7, you need to run:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python<version>_utf32
+Python 2.7:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python2.7_utf32
+Python 3.6:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python3.6_utf32
+["../complex_net_proposal/experiment_networks/slashdot0811.edges", "100", "centola", "20", "20591", "../complex_net_proposal/experiment_results/results_mcich_smc.csv", "MCICH_SMC"]

@@ -1,0 +1,43 @@
+If your Python version is not 3.7, you need to run:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python<version>_utf32
+Python 2.7:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python2.7_utf32
+Python 3.6:
+    export PYTHONPATH=$EBROOTGUROBI/lib/python3.6_utf32
+ERROR: LoadError: ArgumentError: invalid base 10 digit '.' in "../complex_net_proposal/experiment_results/results_mcich_smc.csv"
+Stacktrace:
+ [1] tryparse_internal(::Type{Int64}, ::String, ::Int64, ::Int64, ::Int64, ::Bool) at ./parse.jl:132
+ [2] parse(::Type{Int64}, ::String; base::Nothing) at ./parse.jl:238
+ [3] parse at ./parse.jl:238 [inlined]
+ [4] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:17
+ [5] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:226
+ [6] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [7] include(::Module, ::String) at ./Base.jl:368
+ [8] exec_options(::Base.JLOptions) at ./client.jl:296
+ [9] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:226
+ERROR: LoadError: ArgumentError: invalid base 10 digit '.' in "../complex_net_proposal/experiment_results/results_mcich_smc.csv"
+Stacktrace:
+ [1] tryparse_internal(::Type{Int64}, ::String, ::Int64, ::Int64, ::Int64, ::Bool) at ./parse.jl:132
+ [2] parse(::Type{Int64}, ::String; base::Nothing) at ./parse.jl:238
+ [3] parse at ./parse.jl:238 [inlined]
+ [4] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:17
+ [5] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:226
+ [6] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [7] include(::Module, ::String) at ./Base.jl:368
+ [8] exec_options(::Base.JLOptions) at ./client.jl:296
+ [9] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:226
+ERROR: LoadError: ArgumentError: invalid base 10 digit '.' in "../complex_net_proposal/experiment_results/results_mcich_smc.csv"
+Stacktrace:
+ [1] tryparse_internal(::Type{Int64}, ::String, ::Int64, ::Int64, ::Int64, ::Bool) at ./parse.jl:132
+ [2] parse(::Type{Int64}, ::String; base::Nothing) at ./parse.jl:238
+ [3] parse at ./parse.jl:238 [inlined]
+ [4] main() at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:17
+ [5] top-level scope at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:226
+ [6] include(::Function, ::Module, ::String) at ./Base.jl:380
+ [7] include(::Module, ::String) at ./Base.jl:368
+ [8] exec_options(::Base.JLOptions) at ./client.jl:296
+ [9] _start() at ./client.jl:506
+in expression starting at /sfs/qumulo/qhome/hlc5v/threshold_simulations/julia_version/main.jl:226
+slurmstepd: error: *** JOB 19050682 ON udc-aj37-18c1 CANCELLED AT 2020-11-29T10:49:58 ***
