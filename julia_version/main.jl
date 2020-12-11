@@ -5,6 +5,7 @@ using Random;
 using Test;
 include("./DiffusionModel.jl")
 include("./Blocking.jl")
+include("./SeedSelection.jl")
 
 
 
@@ -32,9 +33,9 @@ function main()
 		for i=1:repetitions
 			model = DiffusionModel.MultiDiffusionModelConstructor(graph)
 			if seeding_method == "centola"
-				seeds = choose_by_centola(model, num_seeds)
+				seeds = SeedSelection.choose_by_centola(model, num_seeds)
 			elseif seeding_method == "random_k_core"
-				seeds = choose_random_k_core(model, 20, num_seeds)
+				seeds = SeedSelection.choose_random_k_core(model, 20, num_seeds)
 			end		
 			for threshold in thresholds
 				state = rand(UInt)
@@ -90,13 +91,13 @@ function main()
 						blocking_summary_mcich = DiffusionModel.getStateSummary(model)
                 
 
-						blockers_random = random_blocking(model, selected_budgets, seed_tup)	
+						blockers_random = Blocking.random_blocking(model, selected_budgets, seed_tup)	
 						DiffusionModel.set_initial_conditions!(model, seed_tup)
 						DiffusionModel.set_blocking!(model, blockers_random)
 						DiffusionModel.full_run(model)
 						blocking_summary_random = DiffusionModel.getStateSummary(model)
 
-						blockers_degree = high_degree_blocking(model, selected_budgets, seed_tup)	
+						blockers_degree = Blocking.high_degree_blocking(model, selected_budgets, seed_tup)	
 						DiffusionModel.set_initial_conditions!(model, seed_tup)
 						DiffusionModel.set_blocking!(model, blockers_degree)
 						DiffusionModel.full_run(model)
@@ -152,80 +153,5 @@ function append_results(filename::String, summaries, metadata)
 	end;
 end
 
-
-function choose_by_centola(model, num_seeds::Int)::Set{Int}
-	chosen_vertex = rand(vertices(model.network))
-	seeds = Set{Int}([chosen_vertex])
-	while length(seeds) < num_seeds
-		for neighbor in neighbors(model.network, chosen_vertex)
-			union!(seeds, [neighbor])
-			if length(seeds) >= num_seeds
-				return seeds
-			end
-		end
-		chosen_vertex = rand(neighbors(model.network, chosen_vertex))
-	end
-	return seeds
-end
-
-function choose_random_k_core(model, k::Int, num_seeds::Int)::Set{Int}
-	k_core_nodes = find_k_core(model.network, k)
-	choices = Set{Int}()
-	while length(choices) < num_seeds
-		choice = rand(k_core_nodes)
-		union!(choices, [choice])
-	end
-	return choices
-end
-
-
-function find_k_core(network, k::Int)::Set{Int}
-	k_cores = Set{Int}()
-	for node in vertices(network)
-		if degree(network, node) >= k
-			union!(k_cores, [node])
-		end
-	end
-	return k_cores
-end
-
-function high_degree_blocking(model, budgets::Vector{Int}, seed_set::Tuple)::Vector{Set{Int}}
-	my_degree(x) = degree(model.network, x)
-	high_degree_nodes = sort(vertices(model.network), by=my_degree, rev=true)
-	blockers = Vector{Set{Int}}(undef, length(budgets))
-	for i=1:length(blockers)
-		curr_set = Set{Int}()
-		curr_budget = budgets[i]
-		curr_seeds = seed_set[i]
-		j=1
-		while length(curr_set) < curr_budget
-			curr_selection = high_degree_nodes[j]
-			if curr_selection ∉ curr_seeds
-				union!(curr_set, [curr_selection])
-			end
-			j += 1
-		end
-		blockers[i] = curr_set
-	end
-	return blockers
-end
-
-
-function random_blocking(model, budgets::Vector{Int}, exclude::Tuple)::Vector{Set{Int}}
-	blockers = Vector{Set{Int}}(undef, length(budgets))
-	for i=1:length(blockers)
-		curr_set = Set{Int}()
-		curr_budget = budgets[i]
-		curr_seeds = exclude[i]
-		while length(curr_set) < curr_budget
-			curr_selection = rand(vertices(model.network))
-			if curr_selection ∉ curr_seeds
-				union!(curr_set, [curr_selection])
-			end
-		end
-		blockers[i] = curr_set
-	end
-	return blockers
-end
 
 main()

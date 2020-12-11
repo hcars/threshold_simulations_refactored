@@ -4,6 +4,45 @@ module Blocking
     include("./DiffusionModel.jl")
 
 
+    function high_degree_blocking(model, budgets::Vector{Int}, seed_set::Tuple)::Vector{Set{Int}}
+        my_degree(x) = degree(model.network, x)
+        high_degree_nodes = sort(vertices(model.network), by=my_degree, rev=true)
+        blockers = Vector{Set{Int}}(undef, length(budgets))
+        for i=1:length(blockers)
+            curr_set = Set{Int}()
+            curr_budget = budgets[i]
+            curr_seeds = seed_set[i]
+            j=1
+            while length(curr_set) < curr_budget
+                curr_selection = high_degree_nodes[j]
+                if curr_selection ∉ curr_seeds
+                    union!(curr_set, [curr_selection])
+                end
+                j += 1
+            end
+            blockers[i] = curr_set
+        end
+        return blockers
+    end
+    
+    
+    function random_blocking(model, budgets::Vector{Int}, exclude::Tuple)::Vector{Set{Int}}
+        blockers = Vector{Set{Int}}(undef, length(budgets))
+        for i=1:length(blockers)
+            curr_set = Set{Int}()
+            curr_budget = budgets[i]
+            curr_seeds = exclude[i]
+            while length(curr_set) < curr_budget
+                curr_selection = rand(vertices(model.network))
+                if curr_selection ∉ curr_seeds
+                    union!(curr_set, [curr_selection])
+                end
+            end
+            blockers[i] = curr_set
+        end
+        return blockers
+    end
+
     function mcich(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int})
         blockings = Vector()
             for i=1:length(budgets)

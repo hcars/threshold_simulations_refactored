@@ -1,5 +1,6 @@
 include("../DiffusionModel.jl")
 include("../Blocking.jl")
+include("../SeedSelection.jl")
 using LightGraphs;
 using Test;
 using GLPK;
@@ -314,17 +315,66 @@ end
             DiffusionModel.full_run(model_6)
             curr_sum = DiffusionModel.getStateSummary(model_6)
             if curr_sum[2] + curr_sum[4] - 20 != 0 
-	       new_inactive = curr_sum[2] + curr_sum[4]
+	           new_inactive = curr_sum[2] + curr_sum[4]
                @test inactive > new_inactive
                inactive = new_inactive
-	    end
+	        end
         end
     end    
 
 
 end
 
+@testset "Jazz Net Test" begin
+    name = "../../complex_net_proposal/experiment_networks/jazz.net.clean.uel"
+    graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
+    graph = SimpleGraph(graph_di)
+    
 
+    blockedDict_7 = Dict{Int,UInt}()
+    thresholdStates_7 = Dict{Int,UInt32}()
+    model_7 = DiffusionModel.MultiDiffusionModel(graph_7, node_states_7, thresholdStates_7, blockedDict_7, [UInt32(1), UInt32(1)], UInt32(0))
+    seeds = SeedSelection.choose_by_centola(model_7, 20)
+
+    full_run_7 = DiffusionModel.full_run(model_7)
+
+    model.θ_i = [UInt(2), UInt(2)]
+	DiffusionModel.set_initial_conditions!(model, seeds)
+
+	seed_set_1 = Set{Int}()
+	seed_set_2 = Set{Int}()
+	for node in keys(model.nodeStates)
+		if model.nodeStates[node] == 1
+			union!(seed_set_1, [node])
+        elseif model.nodeStates[node] == 2
+        	union!(seed_set_2, [node])
+		else
+			union!(seed_set_1, [node])
+            union!(seed_set_2, [node])
+    	end
+	end
+	seed_tup = (seed_set_1, seed_set_2)
+
+
+    @testset "MCICH SMC test on jazz" begin
+        summary_7 = DiffusionModel.getStateSummary(model_7)
+        inactive = summary_7[2] + summary_7[4] 
+        for i=1:100
+            blocker = Blocking.mcich(model_7, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))), full_run_7, [i, 0])
+            DiffusionModel.set_initial_conditions!(model_7, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))))
+            DiffusionModel.set_blocking!(model_7,  blocker)
+            DiffusionModel.full_run(model_7)
+            curr_sum = DiffusionModel.getStateSummary(model_7)
+            if curr_sum[2] + curr_sum[4] - 20 != 0 
+	           new_inactive = curr_sum[2] + curr_sum[4]
+               @test inactive > new_inactive
+               inactive = new_inactive
+	        end
+        end
+    end
+
+
+end
 
 
 end
