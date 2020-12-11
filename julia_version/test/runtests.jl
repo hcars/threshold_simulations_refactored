@@ -165,28 +165,29 @@ end
 
     model_3 = DiffusionModel.MultiDiffusionModel(graph_3, node_states_3, thresholdStates_3, blockedDict_3, [UInt32(1), UInt32(1)], UInt32(0))
     full_run_3 = DiffusionModel.full_run(model_3)
+    states_3_no_block = DiffusionModel.getStateSummary(model_3)    
 
     @testset "MCICH SMC Heuristic" begin 
         blocker = Blocking.mcich(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, [1, 1])
-        @test blocker[1] == [2]
-        @test blocker[2] == [2]
+        @test blocker[1] == [2] || blocker[1] == [3]
+        @test blocker[2] == [2] || blocker[2] == [3]
         DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
         DiffusionModel.set_blocking!(model_3,  blocker)
         full_run_3 = DiffusionModel.full_run(model_3)
         states_3 = DiffusionModel.getStateSummary(model_3)
-        @test isempty(intersect([4, 5, 8, 9, 10, 11], keys(model_3.nodeStates)))
+        @test sum(states_3[2:3]) + 2*states_3[4] == sum(states_3_no_block[2:3]) + 2*states_3_no_block[4] - 14
     end
 
 
     @testset "MCICH ILP" begin
         blocker = Blocking.mcich_optimal(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, [1, 1], GLPK.Optimizer)
-        @test blocker[1] == [3]
-        @test blocker[2] == [3]
+        @test blocker[1] == [2] || blocker[1] == [3]
+        @test blocker[2] == [2] || blocker[2] == [3]
         DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
         DiffusionModel.set_blocking!(model_3,  blocker)
         DiffusionModel.full_run(model_3)
-        DiffusionModel.getStateSummary(model_3)
-        @test isempty(intersect([3, 6,7, 12, 13], keys(model_3.nodeStates)))
+        states_3 = DiffusionModel.getStateSummary(model_3)
+        @test sum(states_3[2:3]) + 2*states_3[4] == sum(states_3_no_block[2:3]) + 2*states_3_no_block[4] - 14
     end
 
 
@@ -265,12 +266,12 @@ end
     get!(node_states_5, 0, 1)
     get!(node_states_5, 1, 1)
     get!(node_states_5, 9, 1)
-    get!(node_states_2, 8, 1)
+    get!(node_states_5, 8, 1)
     blockedDict_5 = Dict{Int,UInt}()
     thresholdStates_5 = Dict{Int,UInt32}()
     model_5 = DiffusionModel.MultiDiffusionModel(graph_5, node_states_5, thresholdStates_5, blockedDict_5, [UInt32(2), UInt32(2)], UInt32(0))
+    full_run_5 = DiffusionModel.full_run(model_5)
     @testset "Normal diffusion on graph 5" begin
-        full_run_5 = DiffusionModel.full_run(model_5)
         summary_5 = DiffusionModel.getStateSummary(model_5)
         @test summary_5[1] == 0
         @test summary_5[2] == 10
@@ -280,7 +281,7 @@ end
     
     
     @testset "Optimal test on graph 5" begin
-        blocker = Blocking.ilp_optimal(model_5, Set{Int}(0,1,8,9), full_run_5, 1, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_5, Set{Int}([0,1,8,9]), full_run_5, 1, GLPK.Optimizer)
         @test blocker == Dict(2=>1)
     end
 
@@ -292,7 +293,7 @@ end
 end
 
 @testset "Ascending Budget" begin
-    graph_6 = binary_tree(200)
+    graph_6 = binary_tree(9)
     node_states_6 = Dict()
     for i=1:20
         get!(node_states_6, i, 3)
@@ -300,25 +301,30 @@ end
     
     blockedDict_6 = Dict{Int,UInt}()
     thresholdStates_6 = Dict{Int,UInt32}()
-    model_6 = DiffusionModel.MultiDiffusionModel(graph_6, node_states_6, thresholdStates_6, blockedDict_6, [UInt32(2), UInt32(2)], UInt32(0))
+    model_6 = DiffusionModel.MultiDiffusionModel(graph_6, node_states_6, thresholdStates_6, blockedDict_6, [UInt32(1), UInt32(1)], UInt32(0))
     full_run_6 = DiffusionModel.full_run(model_6)
 
     @testset "MCICH SMC test on graph 6" begin
         summary_6 = DiffusionModel.getStateSummary(model_6)
-        inactive = summary_6[1]
+        inactive = summary_6[2] + summary_6[4] 
         for i=1:50
             blocker = Blocking.mcich(model_6, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))), full_run_6, [i, 0])
             DiffusionModel.set_initial_conditions!(model_6, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))))
             DiffusionModel.set_blocking!(model_6,  blocker)
             DiffusionModel.full_run(model_6)
-            new_inactive = DiffusionModel.getStateSummary(model_6)[1]
-            @test inactive <= new_inactive
-            inactive = new_inactive
+            curr_sum = DiffusionModel.getStateSummary(model_6)
+            if curr_sum[2] + curr_sum[4] - 20 != 0 
+	       new_inactive = curr_sum[2] + curr_sum[4]
+               @test inactive > new_inactive
+               inactive = new_inactive
+	    end
         end
     end    
 
 
 end
+
+
 
 
 end
