@@ -200,6 +200,7 @@ end
         @test length(blocker) == 1
     end
 
+
 end
 
 @testset "Blocking Test: Star Graph" begin
@@ -238,6 +239,84 @@ end
         blocker = Blocking.ilp_optimal(model_4, Set{Int}(2), full_run_4, 4, GLPK.Optimizer)
         @test blocker == Dict(1=>3)
     end
+
+end
+
+@testset "Hand Drawn Graph 1" begin
+    graph_5 = SimpleGraph()
+    add_vertices!(graph_5, 10)
+    add_edge!(graph_5, 0, 2)
+    add_edge!(graph_5, 1, 2)
+    add_edge!(graph_5, 1, 3)
+    add_edge!(graph_5, 2, 3)
+    add_edge!(graph_5, 2, 4)
+    add_edge!(graph_5, 2, 5)
+    add_edge!(graph_5, 3, 4)
+    add_edge!(graph_5, 3, 5)
+    add_edge!(graph_5, 4, 5)
+    add_edge!(graph_5, 4, 7)
+    add_edge!(graph_5, 5, 6)
+    add_edge!(graph_5, 6, 7)
+    add_edge!(graph_5, 6, 9)
+    add_edge!(graph_5, 7, 8)
+    add_edge!(graph_5, 8, 4)
+    add_edge!(graph_5, 8, 2)
+    node_states_5 = Dict{Int,UInt}()
+    get!(node_states_5, 0, 1)
+    get!(node_states_5, 1, 1)
+    get!(node_states_5, 9, 1)
+    get!(node_states_2, 8, 1)
+    blockedDict_5 = Dict{Int,UInt}()
+    thresholdStates_5 = Dict{Int,UInt32}()
+    model_5 = DiffusionModel.MultiDiffusionModel(graph_5, node_states_5, thresholdStates_5, blockedDict_5, [UInt32(2), UInt32(2)], UInt32(0))
+    @testset "Normal diffusion on graph 5" begin
+        full_run_5 = DiffusionModel.full_run(model_5)
+        summary_5 = DiffusionModel.getStateSummary(model_5)
+        @test summary_5[1] == 0
+        @test summary_5[2] == 10
+        @test summary_5[3] == 0
+        @test summary_5[4] == 0
+    end
+    
+    
+    @testset "Optimal test on graph 5" begin
+        blocker = Blocking.ilp_optimal(model_5, Set{Int}(0,1,8,9), full_run_5, 1, GLPK.Optimizer)
+        @test blocker == Dict(2=>1)
+    end
+
+
+    @testset "MCICH SMC test on graph 5" begin
+        blocker = Blocking.mcich(model_5, (Set{Int}([0,1,8,9]), Set{Int}()), full_run_5, [1, 0])
+        @test blocker[1] == [2]
+    end
+end
+
+@testset "Ascending Budget" begin
+    graph_6 = binary_tree(200)
+    node_states_6 = Dict()
+    for i=1:20
+        get!(node_states_6, i, 3)
+    end
+    
+    blockedDict_6 = Dict{Int,UInt}()
+    thresholdStates_6 = Dict{Int,UInt32}()
+    model_6 = DiffusionModel.MultiDiffusionModel(graph_6, node_states_6, thresholdStates_6, blockedDict_6, [UInt32(2), UInt32(2)], UInt32(0))
+    full_run_6 = DiffusionModel.full_run(model_6)
+
+    @testset "MCICH SMC test on graph 6" begin
+        summary_6 = DiffusionModel.getStateSummary(model_6)
+        inactive = summary_6[1]
+        for i=1:50
+            blocker = Blocking.mcich(model_6, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))), full_run_6, [i, 0])
+            DiffusionModel.set_initial_conditions!(model_6, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))))
+            DiffusionModel.set_blocking!(model_6,  blocker)
+            DiffusionModel.full_run(model_6)
+            new_inactive = DiffusionModel.getStateSummary(model_6)[1]
+            @test inactive <= new_inactive
+            inactive = new_inactive
+        end
+    end    
+
 
 end
 
