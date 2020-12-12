@@ -2,8 +2,10 @@ include("../DiffusionModel.jl")
 include("../Blocking.jl")
 include("../SeedSelection.jl")
 using LightGraphs;
+using Random;
 using Test;
 using GLPK;
+using GraphIO;
 
 @testset "All Tests" begin
 
@@ -307,7 +309,7 @@ end
 
     @testset "MCICH SMC test on graph 6" begin
         summary_6 = DiffusionModel.getStateSummary(model_6)
-        inactive = summary_6[2] + summary_6[4] 
+        active = summary_6[2] + summary_6[4] 
         for i=1:50
             blocker = Blocking.mcich(model_6, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))), full_run_6, [i, 0])
             DiffusionModel.set_initial_conditions!(model_6, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))))
@@ -315,9 +317,9 @@ end
             DiffusionModel.full_run(model_6)
             curr_sum = DiffusionModel.getStateSummary(model_6)
             if curr_sum[2] + curr_sum[4] - 20 != 0 
-	           new_inactive = curr_sum[2] + curr_sum[4]
-               @test inactive > new_inactive
-               inactive = new_inactive
+	           new_active = curr_sum[2] + curr_sum[4]
+               @test active > new_active
+               active = new_active
 	        end
         end
     end    
@@ -328,25 +330,24 @@ end
 @testset "Jazz Net Test" begin
     name = "../../complex_net_proposal/experiment_networks/jazz.net.clean.uel"
     graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
-    graph = SimpleGraph(graph_di)
-    
+    graph_7 = SimpleGraph(graph_di)
+   
+    Random.seed!(129) 
 
     blockedDict_7 = Dict{Int,UInt}()
     thresholdStates_7 = Dict{Int,UInt32}()
-    model_7 = DiffusionModel.MultiDiffusionModel(graph_7, node_states_7, thresholdStates_7, blockedDict_7, [UInt32(1), UInt32(1)], UInt32(0))
+    node_states_7 = Dict()
+    model_7 = DiffusionModel.MultiDiffusionModel(graph_7, node_states_7, thresholdStates_7, blockedDict_7, [UInt32(2), UInt32(2)], UInt32(0))
     seeds = SeedSelection.choose_by_centola(model_7, 20)
 
-    full_run_7 = DiffusionModel.full_run(model_7)
-
-    model.θ_i = [UInt(2), UInt(2)]
-	DiffusionModel.set_initial_conditions!(model, seeds)
+    DiffusionModel.set_initial_conditions!(model_7,  seeds)
 
 	seed_set_1 = Set{Int}()
 	seed_set_2 = Set{Int}()
-	for node in keys(model.nodeStates)
-		if model.nodeStates[node] == 1
+	for node in keys(model_7.nodeStates)
+		if model_7.nodeStates[node] == 1
 			union!(seed_set_1, [node])
-        elseif model.nodeStates[node] == 2
+        elseif model_7.nodeStates[node] == 2
         	union!(seed_set_2, [node])
 		else
 			union!(seed_set_1, [node])
@@ -356,19 +357,47 @@ end
 	seed_tup = (seed_set_1, seed_set_2)
 
 
+    full_run_7 = DiffusionModel.full_run(model_7)
+
+
     @testset "MCICH SMC test on jazz" begin
         summary_7 = DiffusionModel.getStateSummary(model_7)
-        inactive = summary_7[2] + summary_7[4] 
+        active = summary_7[2]  + summary_7[3]  + summary_7[4] 
+        previous_blockers = Dict()
         for i=1:100
-            blocker = Blocking.mcich(model_7, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))), full_run_7, [i, 0])
-            DiffusionModel.set_initial_conditions!(model_7, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))))
+            blocker = Blocking.mcich(model_7, seed_tup, full_run_7, [i, i])
+
+            previous_blockers = blocker 
+
+            DiffusionModel.set_initial_conditions!(model_7,  seed_tup)
             DiffusionModel.set_blocking!(model_7,  blocker)
             DiffusionModel.full_run(model_7)
             curr_sum = DiffusionModel.getStateSummary(model_7)
-            if curr_sum[2] + curr_sum[4] - 20 != 0 
-	           new_inactive = curr_sum[2] + curr_sum[4]
-               @test inactive > new_inactive
-               inactive = new_inactive
+            if curr_sum[2] + curr_sum[3] + curr_sum[4] - 20 != 0 
+	       new_active = curr_sum[2] + curr_sum[3] + curr_sum[4] 
+               if active >= new_active
+                  local blocking_index_curr::Int
+		  local blocking_index_last::Int
+		  for j=1:length(full_run_7)
+ 		      for key in keys(blocker)	
+                        for k=1:2
+			   if key in full_run_7[j][k] && (blockers[key] == k || blockers[key] == 3) 
+                              blocking_index_curr = j 
+                           end
+ 			end
+		      end
+                      for key in keys(previous_blockers)
+                        for k=1:2 
+                           if key in full_run_7[j][k] && (previous_blockers[key] == k || previous_blockers[key] == 3) 
+                              blocking_index_last = j 
+                           end
+                        end
+                      end
+                  end
+		  @test blocking_index_cur > blocking_index_last
+	
+	       end	
+               active = new_active
 	        end
         end
     end
