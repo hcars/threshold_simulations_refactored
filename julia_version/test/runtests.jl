@@ -374,31 +374,30 @@ end
             DiffusionModel.full_run(model_7)
             curr_sum = DiffusionModel.getStateSummary(model_7)
             if curr_sum[2] + curr_sum[3] + curr_sum[4] - 20 != 0 
-	       new_active = curr_sum[2] + curr_sum[3] + curr_sum[4] 
-               if active >= new_active
-                  local blocking_index_curr::Int
-		  local blocking_index_last::Int
-		  for j=1:length(full_run_7)
- 		      for key in keys(blocker)	
-                        for k=1:2
-			   if key in full_run_7[j][k] && (blockers[key] == k || blockers[key] == 3) 
-                              blocking_index_curr = j 
-                           end
- 			end
-		      end
-                      for key in keys(previous_blockers)
-                        for k=1:2 
-                           if key in full_run_7[j][k] && (previous_blockers[key] == k || previous_blockers[key] == 3) 
-                              blocking_index_last = j 
-                           end
+                new_active = curr_sum[2] + curr_sum[3] + curr_sum[4] 
+                if active >= new_active
+                    local blocking_index_curr::Int
+                    local blocking_index_last::Int
+                    for j=1:length(full_run_7)
+                        for key in keys(blocker)	
+                            for k=1:2
+                                if key in full_run_7[j][k] && (blockers[key] == k || blockers[key] == 3) 
+                                    blocking_index_curr = j 
+                                end
+                            end
                         end
-                      end
-                  end
-		  @test blocking_index_cur > blocking_index_last
-	
-	       end	
-               active = new_active
-	        end
+                        for key in keys(previous_blockers)
+                            for k=1:2 
+                                if key in full_run_7[j][k] && (previous_blockers[key] == k || previous_blockers[key] == 3) 
+                                    blocking_index_last = j 
+                                end
+                            end
+                        end
+                    end
+                    @test blocking_index_cur > blocking_index_last
+                    active = new_active
+                end
+            end
         end
     end
 
