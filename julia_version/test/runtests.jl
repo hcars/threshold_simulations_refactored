@@ -379,20 +379,24 @@ end
                     local blocking_index_curr::Int
                     local blocking_index_last::Int
                     for j=1:length(full_run_7)
-                        for key in keys(blocker)	
-                            for k=1:2
-                                if key in full_run_7[j][k] && (blockers[key] == k || blockers[key] == 3) 
+                        for k=1:2
+                            blocker_curr = blocker[k]
+                            for key in keys(blocker_curr)
+                                if key in keys(full_run_7[j][k]) 
                                     blocking_index_curr = j 
                                 end
                             end
                         end
-                        for key in keys(previous_blockers)
-                            for k=1:2 
-                                if key in full_run_7[j][k] && (previous_blockers[key] == k || previous_blockers[key] == 3) 
+                        
+                        for k=1:2
+                            blocker_curr = previous_blockers[k]
+                            for key in keys(blocker_curr)
+                                if key in keys(full_run_7[j][k]) 
                                     blocking_index_last = j 
                                 end
                             end
                         end
+
                     end
                     @test blocking_index_cur > blocking_index_last
                     active = new_active
