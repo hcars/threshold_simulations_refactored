@@ -378,12 +378,15 @@ end
                 if active >= new_active
                     local blocking_index_curr::Int
                     local blocking_index_last::Int
+
                     for j=1:length(full_run_7)
+
                         for k=1:2
                             blocker_curr = blocker[k]
                             for key in keys(blocker_curr)
                                 if key in keys(full_run_7[j][k]) 
                                     blocking_index_curr = j 
+ 				    break
                                 end
                             end
                         end
@@ -393,12 +396,19 @@ end
                             for key in keys(blocker_curr)
                                 if key in keys(full_run_7[j][k]) 
                                     blocking_index_last = j 
+				    break
                                 end
                             end
                         end
 
                     end
-                    @test blocking_index_cur > blocking_index_last
+    		
+		    if !isempty(previous_blockers)
+                        if  length(previous_blockers[1]) + length(previous_blockers[2]) > length(blocker[1]) + length(blocker[2]) 
+				@test blocking_index_curr > blocking_index_last
+		        end
+		    end
+
                     active = new_active
                 end
             end

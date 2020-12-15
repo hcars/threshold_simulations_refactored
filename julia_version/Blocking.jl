@@ -45,6 +45,8 @@ module Blocking
 
     function mcich(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int})
         blockings = Vector()
+            blocking_point = [1,1]
+
             for i=1:length(budgets)
                 budget = budgets[i]
                 candidate_blocker = Vector{Int}()
@@ -55,9 +57,13 @@ module Blocking
                     if isempty(find_blocking)
                         break
                     end
+		    # Here we are differencing the seed nodes out from the seed set.
+                    # This could be a source of randomness since the set object is unordered.
                     available_to_block = setdiff(Set{Int}(keys(find_blocking)), seed_nodes)
                     if length(available_to_block) <= budget
                         candidate_blocker = available_to_block
+                        blocking_point[i] = j
+
                         break
                     end
                     to_block = Dict{Int, UInt}()
@@ -80,10 +86,12 @@ module Blocking
                     current_blocking, unblocked = coverage(blocking_map, to_block, budget)
                     if unblocked == 0
                         candidate_blocker = current_blocking 
+                        blocking_point[i] = j 
                         break
                     elseif unblocked < unblocked_min
                         candidate_blocker = current_blocking
                         unblocked_min = unblocked   
+                        blocking_point[i]  = j
                     end
                 end  
             append!(blockings, [collect(candidate_blocker)])
@@ -91,7 +99,7 @@ module Blocking
                 budgets[i+1] += budget - length(blockings)
             end
         end
-        return blockings
+        return blockings, blocking_point
     end
 
     
@@ -100,31 +108,32 @@ module Blocking
         upperLimit = minimum([budget, length(available_to_block)])
         best_blocking = Vector{Int}(undef, upperLimit)
         for i=1:upperLimit
-            local best_node::Int 
-            largest_intersection = 0
-            for possible_node in keys(available_to_block)
-                unblocked_neighbors = intersect(get(available_to_block, possible_node, []), keys(to_block))
-                if length(unblocked_neighbors) >= largest_intersection
-                    largest_intersection = length(unblocked_neighbors)
-                    best_node = possible_node
-                end
-            end
-            best_blocking[i] = best_node
+            possible_blocking_nodes = collect(keys(available_to_block)) 
+
+            intersections = map(x->length(intersect(get(possible_blocking_nodes, x, []), keys(to_block))), keys(possible_blocking_nodes))
+
+	    best_node = possible_blocking_nodes[argmax(intersections)] 
+	    best_blocking[i] = best_node 
+
             for node in get(available_to_block, best_node, [])
                 if node in keys(to_block)
+
                     requirement = get(to_block, node, 0)
                     requirement -= 1
                     delete!(to_block, node)
+
                     if requirement > 0 
                         get!(to_block, node, requirement)
                     end
                 end
             end
             delete!(available_to_block, best_node)
+
             if isempty(to_block)
                 break
             end
         end
+
         return best_blocking, length(keys(to_block))
     end
 
@@ -220,13 +229,18 @@ module Blocking
         end
         @objective(lp, Max, sum(x_i))
         optimize!(lp)
+        if (termination_status(lp) == MOI.TIME_LIMIT) || (termination_status(lp) == MOI.OPTIMAL) 
         blockers = Vector{Int}()
-        for i=1:length(y_j)
-            if value.(y_j[i]) == 1
-                append!(blockers, [available_to_block[i]])
+        for (index, y) in enumerate(y_j)
+            if value.(y) == 1
+                append!(blockers, [available_to_block[index]])
             end
         end
         return blockers, number_to_block - objective_value(lp)
+        else
+           println(termination_status(lp))
+           error("The model did not solve or run out of time.")
+        end
     end
 
     function ilp_optimal(model, seed_nodes::Set{Int}, updates:: Vector{Tuple}, budget::Int, optimizer)
@@ -283,6 +297,7 @@ module Blocking
                 @constraint(lp, x_vars[i, j] + y_vars[i, j] + z_vars[i, j] == 1)
             end
         end
+
         @constraint(lp, sum(z_vars[i, 1] + z_vars[i, 2] for i=1:num_vertices) <= budget)
         @objective(lp, Min, sum(y_vars[i, 1] + y_vars[i, 2] for i=1:num_vertices))
         optimize!(lp)

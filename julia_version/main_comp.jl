@@ -20,7 +20,7 @@ function main()
 		out_file_name = ARGS[6]
 
 		thresholds = [2,3,4]
-		budgets=append!([.0005, .001], collect(.005:.005:.12))
+		budgets=append!([.0005, .001], collect(.005:.005:.2))
 		graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
 		graph = SimpleGraph(graph_di)
 		Random.seed!(random_seed)
@@ -58,6 +58,10 @@ function main()
 				DiffusionModel.set_initial_conditions!(model, seed_tup)
 				no_blocking_results = DiffusionModel.full_run(model)
 				no_block_summary = DiffusionModel.getStateSummary(model)
+
+                                last_mcich = Nothing
+				last_blockers = Nothing
+
 				for budget in budgets
 						Random.seed!(state)
 
@@ -79,11 +83,37 @@ function main()
 						timing_mcich = finish - start
 
 						DiffusionModel.set_initial_conditions!(model, seed_tup)
-						DiffusionModel.set_blocking!(model, blockers_smart)
+						DiffusionModel.set_blocking!(model, blockers_smart[1])
 
 						DiffusionModel.full_run(model)
 						blocking_summary_mcich_smc = DiffusionModel.getStateSummary(model)
+                                                
+                                                if last_mcich != Nothing && (last_mcich[1][1] > blocking_summary_mcich_smc[1])
+                                                   println("Anomaly")
+                                                   println("--------------") 
+                                                   println("Last Inactive")
+                                                   println(last_mcich[1][1]) 
+                                                   println("Curr Inactive")
+                                                   println(blocking_summary_mcich_smc[1])
+ 					           println("-------------")
+          				           for h=1:2
+                                                        println("Blocking Index")
+ 							println("--------------")   
+                                                        println("Last")
+ 					           	println(last_mcich[2][h])
+         						println("Current")
+							println(blockers_smart[2][h]) 
+						   end
+                                                   if last_blockers != Nothing
+                                                        println("Last Blockers")
+							println(last_blockers)
+						        println("Current Blockers")
+							println(blockers_smart[1])
+						   end
+                                                end  	
 
+						last_blockers = blockers_smart[1]
+                                                last_mcich = (blocking_summary_mcich_smc[1], blockers_smart[2])
 
 						#ILP_OPT
 						start = Dates.now()
