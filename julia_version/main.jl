@@ -74,7 +74,7 @@ function main()
 						
 						# Find the smart blocking method.
 						if blocking_method == "MCICH_SMC"
-							blockers_smart = Blocking.mcich(model, seed_tup, no_blocking_results, selected_budgets)
+							blockers_smart = Blocking.mcich(model, seed_tup, no_blocking_results, selected_budgets)[0]
 						elseif blocking_method == "MCICH_ILP"
 							blockers_smart = Blocking.mcich_optimal(model, seed_tup, no_blocking_results, selected_budgets, Gurobi.Optimizer)	
 						elseif blockers_smart == "ILP_Glob_Opt"

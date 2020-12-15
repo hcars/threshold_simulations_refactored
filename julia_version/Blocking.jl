@@ -243,7 +243,7 @@ module Blocking
         end
     end
 
-    function ilp_optimal(model, seed_nodes::Set{Int}, updates:: Vector{Tuple}, budget::Int, optimizer)
+    function ilp_construction(model, seed_nodes::Set{Int}, updates:: Vector{Tuple}, budget::Int, optimizer, net_vertices)
         lp = Model(optimizer)
         # Scrub out seed nodes
         for update_t in updates
@@ -255,7 +255,7 @@ module Blocking
                 end
             end
         end
-        net_vertices = collect(Int, vertices(model.network))
+
         num_vertices = length(net_vertices)
 
         x_vars = zeros(Int, num_vertices, 2)
@@ -300,8 +300,19 @@ module Blocking
 
         @constraint(lp, sum(z_vars[i, 1] + z_vars[i, 2] for i=1:num_vertices) <= budget)
         @objective(lp, Min, sum(y_vars[i, 1] + y_vars[i, 2] for i=1:num_vertices))
+        return lp
+    end
+
+    function ilp_optimal(model, seed_nodes::Set{Int}, updates:: Vector{Tuple}, budget::Int, optimizer)
+        
+
+        net_vertices = collect(Int, vertices(model.network))
+
+        ilp_construction(model, seed_nodes, updates, budget, optimizer, net_vertices)
+
         optimize!(lp)
 
+        z_vars = lp[:z_vars]
         blockers = Dict{Int, UInt}()
         for j=1:2
             for i=1:num_vertices
@@ -313,7 +324,9 @@ module Blocking
                 end
             end
         end
+
         return blockers
+
     end
 
 end
