@@ -81,7 +81,7 @@ end
     full_run_1 = DiffusionModel.full_run(model)
     
     @testset "MCICH SMC Heuristic Test" begin
-        blocker = Blocking.mcich(model, (Set{Int}(), Set{Int}()), full_run_1, [1, 2])[0]
+        blocker = Blocking.mcich(model, (Set{Int}(), Set{Int}()), full_run_1, [1, 2])[1]
         @test blocker[1] == [3]
     end
 
@@ -138,10 +138,9 @@ end
 
     @testset "MCICH SMC Heuristic Test" begin
         # Run and find blockers
-        blocker = Blocking.mcich(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, [0, 1])[0]
+        blocker = Blocking.mcich(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, [0, 1])[1]
         @test blocker[2] == [6]
     end
-
 
     @testset "MCICH ILP Test" begin
         # Run and find optimal 
@@ -171,7 +170,7 @@ end
     states_3_no_block = DiffusionModel.getStateSummary(model_3)    
 
     @testset "MCICH SMC Heuristic" begin 
-        blocker = Blocking.mcich(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, [1, 1])[0]
+        blocker = Blocking.mcich(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, [1, 1])[1]
         @test blocker[1] == [2] || blocker[1] == [3]
         @test blocker[2] == [2] || blocker[2] == [3]
         DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
@@ -217,10 +216,10 @@ end
     full_run_4 = DiffusionModel.full_run(model_4)
 
     @testset "MCICH SMC Heuristic" begin
-        blocker = Blocking.mcich(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 1])[0]
+        blocker = Blocking.mcich(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 1])[1]
         @test blocker[1] == [1]
         @test blocker[2] == [1]
-        blocker = Blocking.mcich(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 0])[0]
+        blocker = Blocking.mcich(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 0])[1]
         @test blocker[1] == [1]
         @test isempty(blocker[2])
     end
@@ -290,7 +289,7 @@ end
 
 
     @testset "MCICH SMC test on graph 5" begin
-        blocker = Blocking.mcich(model_5, (Set{Int}([0,1,8,9]), Set{Int}()), full_run_5, [1, 0])[0]
+        blocker = Blocking.mcich(model_5, (Set{Int}([0,1,8,9]), Set{Int}()), full_run_5, [1, 0])[1]
         @test blocker[1] == [2]
     end
 end
@@ -311,7 +310,7 @@ end
         summary_6 = DiffusionModel.getStateSummary(model_6)
         active = summary_6[2] + summary_6[4] 
         for i=1:50
-            blocker = Blocking.mcich(model_6, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))), full_run_6, [i, 0])[0]
+            blocker = Blocking.mcich(model_6, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))), full_run_6, [i, 0])[1]
             DiffusionModel.set_initial_conditions!(model_6, (Set{Int}(collect(1:20)), Set{Int}(collect(1:20))))
             DiffusionModel.set_blocking!(model_6,  blocker)
             DiffusionModel.full_run(model_6)
@@ -331,22 +330,22 @@ end
 @testset "Simple Test for ILP construction" begin
     graph_7 = SimpleGraph()
     add_vertices!(graph_7, 4)
-    add_edge!(graph_7, 0, 1)
     add_edge!(graph_7, 1, 2)
     add_edge!(graph_7, 2, 3)
+    add_edge!(graph_7, 3, 4)
 
 
     blockedDict_7 = Dict{Int,UInt}()
     thresholdStates_7 = Dict{Int,UInt32}()
-    node_states_7 = Dict(0=>3)
-    model_7 = DiffusionModel.MultiDiffusionModel(graph_7, node_states_7, thresholdStates_7, blockedDict_7, [UInt32(2), UInt32(2)], UInt32(0))
+    node_states_7 = Dict(1=>3)
+    model_7 = DiffusionModel.MultiDiffusionModel(graph_7, node_states_7, thresholdStates_7, blockedDict_7, [UInt32(1), UInt32(1)], UInt32(0))
 
     full_run_7 = DiffusionModel.full_run(model_7)
 
     @testset "Check ILP construction" begin
-        ilp = ilp_construction(model_7, Set{Int}([0]), full_run_7, 1, Gurobi.Optimizer, net_vertices = collect(Int, vertices(model.network)))
+        ilp = Blocking.ilp_construction(model_7, Set{Int}([1]), full_run_7, 1, GLPK.Optimizer, collect(Int, vertices(model_7.network)))
         x, y, z = ilp[:x_vars], ilp[:y_vars], ilp[:z_vars]
-        println(ilp)
+        
 
     end
 
@@ -397,16 +396,16 @@ end
             previous_blockers = blocker 
 
             DiffusionModel.set_initial_conditions!(model_8,  seed_tup)
-            DiffusionModel.set_blocking!(model_8,  blocker[0])
+            DiffusionModel.set_blocking!(model_8,  blocker[1])
             DiffusionModel.full_run(model_8)
             curr_sum = DiffusionModel.getStateSummary(model_8)
             if curr_sum[2] + curr_sum[3] + curr_sum[4] - 20 != 0 
                 new_active = curr_sum[2] + curr_sum[3] + curr_sum[4] 
                 if active >= new_active
     		
-		    if !isempty(previous_blockers[0])
-                if  length(previous_blockers[1]) + length(previous_blockers[2]) > length(blocker[1]) + length(blocker[2]) 
-		    		@test blocker[1] > previous_blockers[1]
+		    if !isempty(previous_blockers[1])
+                if  length(previous_blockers[1][1]) + length(previous_blockers[1][2]) > length(blocker[1][1]) + length(blocker[1][2]) 
+		    		@test blocker[2] > previous_blockers[2]
 		        end
 		    end
 

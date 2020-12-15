@@ -110,7 +110,8 @@ module Blocking
         for i=1:upperLimit
             possible_blocking_nodes = collect(keys(available_to_block)) 
 
-            intersections = map(x->length(intersect(get(possible_blocking_nodes, x, []), keys(to_block))), keys(possible_blocking_nodes))
+  
+            intersections = map(x->length(intersect(get(available_to_block, x, []), keys(to_block))), possible_blocking_nodes)
 
 	    best_node = possible_blocking_nodes[argmax(intersections)] 
 	    best_blocking[i] = best_node 
@@ -308,14 +309,14 @@ module Blocking
 
         net_vertices = collect(Int, vertices(model.network))
 
-        ilp_construction(model, seed_nodes, updates, budget, optimizer, net_vertices)
+        lp = ilp_construction(model, seed_nodes, updates, budget, optimizer, net_vertices)
 
         optimize!(lp)
 
         z_vars = lp[:z_vars]
         blockers = Dict{Int, UInt}()
         for j=1:2
-            for i=1:num_vertices
+            for i=1:length(net_vertices)
                 if value.(z_vars[i, j]) == 1
                     state = get(blockers, net_vertices[i], 0)
                     state += j
