@@ -86,7 +86,7 @@ end
     end
 
     @testset "MCICH Test Optimal ILP"  begin  
-        seeds = Set{Int}([1, 6])  
+        seeds = (Set{Int}([1, 6]), Set{Int}()) 
         blocker = Blocking.ilp_optimal(model, seeds, full_run_1, 1, GLPK.Optimizer)
         @test 3 ∈ keys(blocker)
         @test blocker[3] == 1
@@ -150,11 +150,11 @@ end
     end
 
     @testset "ILP Optimal Test" begin
-        blocker = Blocking.ilp_optimal(model_other, Set{Int}([2, 4, 5 ,7]), full_run_2, 1, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, 1, GLPK.Optimizer)
         @test blocker == Dict(6=>2)
-        blocker = Blocking.ilp_optimal(model_other, Set{Int}([2, 4, 5, 7]), full_run_2, 2, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, 2, GLPK.Optimizer)
         @test blocker == Dict(6=>2, 8=>2)
-        blocker = Blocking.ilp_optimal(model_other, Set{Int}([2, 4, 5, 7]), full_run_2, 8, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, 8, GLPK.Optimizer)
         @test blocker == Dict(6=>2, 8=>2, 3=>1, 1=>1)
     end
 end
@@ -197,9 +197,9 @@ end
     @testset "ILP Optimal Test" begin
         DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
         full_run_3 = DiffusionModel.full_run(model_3)
-        blocker = Blocking.ilp_optimal(model_3, Set{Int}(1), full_run_3, 4, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_3, (Set{Int}([1]), Set{Int}([1]), full_run_3, 4, GLPK.Optimizer)
         @test blocker == Dict(2=>3, 3=>3)
-        blocker = Blocking.ilp_optimal(model_3,  Set{Int}(1), full_run_3, 1, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_3,  (Set{Int}([1]), Set{Int}([1]), full_run_3, 1, GLPK.Optimizer)
         @test 3 ∈ keys(blocker) || 2 ∈ keys(blocker)
         @test length(blocker) == 1
     end
@@ -236,11 +236,11 @@ end
     end
     
     @testset "ILP Optimal Test" begin
-        blocker = Blocking.ilp_optimal(model_4, Set{Int}(2), full_run_4, 1, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, 1, GLPK.Optimizer)
         @test 1 ∈ keys(blocker)
-        blocker = Blocking.ilp_optimal(model_4, Set{Int}(2), full_run_4, 2, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, 2, GLPK.Optimizer)
         @test blocker == Dict(1=>3)
-        blocker = Blocking.ilp_optimal(model_4, Set{Int}(2), full_run_4, 4, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, 4, GLPK.Optimizer)
         @test blocker == Dict(1=>3)
     end
 
@@ -284,7 +284,7 @@ end
     
     
     @testset "Optimal test on graph 5" begin
-        blocker = Blocking.ilp_optimal(model_5, Set{Int}([0,1,8,9]), full_run_5, 1, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_5, (Set{Int}([0,1,8,9]), Set{Int}()), full_run_5, 1, GLPK.Optimizer)
         @test blocker == Dict(2=>1)
     end
 

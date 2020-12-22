@@ -43,7 +43,7 @@ module Blocking
         return blockers
     end
 
-    function mcich(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int})
+    function mcich(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int}, max_time::Int = Nothing)
         blockings = Vector()
             blocking_point = [1,1]
 
@@ -53,11 +53,16 @@ module Blocking
                 unblocked_min = Inf 
                 seed_nodes = seed_sets[i]
                 for j=1:length(updates) - 1
+                    if max_time != Nothing
+                        if j >= max_time
+                            break
+                        end
+                    end
                     find_blocking = updates[j][i]
                     if isempty(find_blocking)
                         break
                     end
-		    # Here we are differencing the seed nodes out from the seed set.
+		            # Here we are differencing the seed nodes out from the seed set.
                     # This could be a source of randomness since the set object is unordered.
                     available_to_block = setdiff(Set{Int}(keys(find_blocking)), seed_nodes)
                     if length(available_to_block) <= budget
@@ -69,6 +74,7 @@ module Blocking
                     to_block = Dict{Int, UInt}()
                     next_dict = updates[j+1][i]
                     blocking_map = Dict{Int, Vector}()
+
                     for node in available_to_block
                         neighbors_to_block = Vector{Int}()
                         for neighbor in all_neighbors(model.network, node)
@@ -106,14 +112,14 @@ module Blocking
 
     function coverage(available_to_block::Dict{Int, Vector}, to_block::Dict{Int, UInt}, budget::Int)
         upperLimit = minimum([budget, length(available_to_block)])
-        best_blocking = Vector{Int}(undef, upperLimit)
+        best_blocking = Set{Int}()
         for i=1:upperLimit
             possible_blocking_nodes = collect(keys(available_to_block)) 
 
             intersections = map(x->length(intersect(get(possible_blocking_nodes, x, []), keys(to_block))), keys(possible_blocking_nodes))
 
-	    best_node = possible_blocking_nodes[argmax(intersections)] 
-	    best_blocking[i] = best_node 
+	        best_node = possible_blocking_nodes[argmax(intersections)] 
+	        union!(best_blocking, [best_node])
 
             for node in get(available_to_block, best_node, [])
                 if node in keys(to_block)
@@ -243,18 +249,11 @@ module Blocking
         end
     end
 
-    function ilp_construction(model, seed_nodes::Set{Int}, updates:: Vector{Tuple}, budget::Int, optimizer, net_vertices)
+    function ilp_construction(model, seed_nodes::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budget::Int, optimizer, net_vertices)
+        # Optimizer says what solver to use
         lp = Model(optimizer)
         # Scrub out seed nodes
-        for update_t in updates
-            for update_set in update_t
-                for node in keys(update_set)
-                    if node in seed_nodes
-                        pop!(update_set, node, 0)
-                    end
-                end
-            end
-        end
+
 
         num_vertices = length(net_vertices)
 
@@ -275,23 +274,19 @@ module Blocking
 
         for i=1:num_vertices
             node = net_vertices[i]
-            state = get!(model.nodeStates, node, 0)
-            if node in seed_nodes
-                if state == 1
-                    @constraint(lp, y_vars[i,1] == 1)
-                elseif  state == 2
-                    @constraint(lp, y_vars[i,2] == 1)
-                elseif state == 3
-                    @constraint(lp, y_vars[i,1] == 1)
-                    @constraint(lp, y_vars[i,2] == 1)
-                end
+
+            if node in seed_nodes[1]
+                @constraint(lp, y_vars[i,1] == 1)
+            end
+            if node in seed_nodes[2]
+                @constraint(lp, y_vars[i,2] == 1)
             end
             neighbors_node = neighbors(model.network, node)
             node_degree = degree(model.network, node)
             neighbor_indices = Vector{Int}()
             for neighbor in neighbors_node
                 append!(neighbor_indices, [findfirst(x->x==neighbor,net_vertices)])
-            end
+            end 
             for j=1:2
                 @constraint(lp, node_degree*x_vars[i,j] + sum(y_vars[k, j] for k in neighbor_indices) <= node_degree + get(model.thresholdStates, node, model.θ_i[j]) - 1)
                 @constraint(lp, x_vars[i, j] + y_vars[i, j] + z_vars[i, j] == 1)
@@ -299,16 +294,18 @@ module Blocking
         end
 
         @constraint(lp, sum(z_vars[i, 1] + z_vars[i, 2] for i=1:num_vertices) <= budget)
-        @objective(lp, Min, sum(y_vars[i, 1] + y_vars[i, 2] for i=1:num_vertices))
+
+        @objective(lp, Min, sum(y_vars[i, 1] + y_vars[i, 2] for i=1:num_vertices) - (length(seed_nodes[1])+ length(seed_nodes[2])) )
+        
         return lp
     end
 
-    function ilp_optimal(model, seed_nodes::Set{Int}, updates:: Vector{Tuple}, budget::Int, optimizer)
+    function ilp_optimal(model, seed_nodes::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budget::Int, optimizer)
         
 
         net_vertices = collect(Int, vertices(model.network))
 
-        ilp_construction(model, seed_nodes, updates, budget, optimizer, net_vertices)
+        lp = ilp_construction(model, seed_nodes, updates, budget, optimizer, net_vertices)
 
         optimize!(lp)
 

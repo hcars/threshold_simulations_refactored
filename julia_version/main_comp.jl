@@ -117,7 +117,7 @@ function main()
 
 						#ILP_OPT
 						start = Dates.now()
-						blockers_smart = Blocking.ilp_optimal(model, seeds, no_blocking_results, Int64(curr_budget), Gurobi.Optimizer)
+						blockers_smart = Blocking.ilp_optimal(model, seed_tup, no_blocking_results, Int64(curr_budget), Gurobi.Optimizer)
 						finish = Dates.now()
 						timing_ilp_opt = finish - start
 
