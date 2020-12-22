@@ -196,9 +196,9 @@ end
     @testset "ILP Optimal Test" begin
         DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
         full_run_3 = DiffusionModel.full_run(model_3)
-        blocker = Blocking.ilp_optimal(model_3, (Set{Int}([1]), Set{Int}([1]), full_run_3, 4, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, 4, GLPK.Optimizer)
         @test blocker == Dict(2=>3, 3=>3)
-        blocker = Blocking.ilp_optimal(model_3,  (Set{Int}([1]), Set{Int}([1]), full_run_3, 1, GLPK.Optimizer)
+        blocker = Blocking.ilp_optimal(model_3,  (Set{Int}([1]), Set{Int}([1])), full_run_3, 1, GLPK.Optimizer)
         @test 3 ∈ keys(blocker) || 2 ∈ keys(blocker)
         @test length(blocker) == 1
     end
@@ -343,7 +343,7 @@ end
     full_run_7 = DiffusionModel.full_run(model_7)
 
     @testset "Check ILP construction" begin
-        ilp = Blocking.ilp_construction(model_7, Set{Int}([1]), full_run_7, 1, GLPK.Optimizer, collect(Int, vertices(model_7.network)))
+        ilp = Blocking.ilp_construction(model_7, (Set{Int}([1]), Set{Int}([1])), full_run_7, 1, GLPK.Optimizer, collect(Int, vertices(model_7.network)))
         x, y, z = ilp[:x_vars], ilp[:y_vars], ilp[:z_vars]
         
 
@@ -351,6 +351,38 @@ end
 
 
 end
+
+@testset "Simple Test for ILP construction 2" begin
+    graph_7 = SimpleGraph()
+    add_vertices!(graph_7, 6)
+    add_edge!(graph_7, 1, 4)
+    add_edge!(graph_7, 1, 5)
+    add_edge!(graph_7, 2, 4)
+    add_edge!(graph_7, 2, 5)
+    add_edge!(graph_7, 3, 4)
+    add_edge!(graph_7, 3, 5)
+    add_edge!(graph_7, 4, 6)
+    add_edge!(graph_7, 5, 6)
+
+
+    blockedDict_7 = Dict{Int,UInt}()
+    thresholdStates_7 = Dict{Int,UInt32}()
+    node_states_7 = Dict(1=>1, 2=>2, 3=>3)
+    model_7 = DiffusionModel.MultiDiffusionModel(graph_7, node_states_7, thresholdStates_7, blockedDict_7, [UInt32(2), UInt32(1)], UInt32(0))
+
+    full_run_7 = DiffusionModel.full_run(model_7)
+
+    @testset "Check ILP construction" begin
+        ilp = Blocking.ilp_construction(model_7, (Set{Int}([1, 3]), Set{Int}([2, 3])), full_run_7, 2, GLPK.Optimizer, collect(Int, vertices(model_7.network)))
+        x, y, z = ilp[:x_vars], ilp[:y_vars], ilp[:z_vars]
+        print(ilp)
+        
+
+    end
+
+
+end
+
 
 
 @testset "Jazz Net Test" begin

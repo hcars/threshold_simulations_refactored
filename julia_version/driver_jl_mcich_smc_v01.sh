@@ -5,7 +5,7 @@
 #SBATCH --time=94:00:00
 #SBATCH --output=../complex_net_proposal/log/production-%j.qlog
 #SBATCH -p bii
-module load julia/1.5.0
+module load julia/1.5.3
 module load gurobi/9.0.1
 
 directory_structure="../complex_net_proposal/experiment_networks/"

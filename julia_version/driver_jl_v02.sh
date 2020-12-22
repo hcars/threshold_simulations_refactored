@@ -5,7 +5,7 @@
 #SBATCH --time=72:00:00
 #SBATCH --output=../complex_net_proposal/log/production-%j.qlog
 #SBATCH -p bii
-module load julia/1.5.0
+module load julia/1.5.3
 
 directory_structure="../complex_net_proposal/experiment_networks/"
 input_paths=("enron.giant.clean.uel")

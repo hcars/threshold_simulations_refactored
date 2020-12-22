@@ -121,19 +121,8 @@ function main()
 						finish = Dates.now()
 						timing_ilp_opt = finish - start
 
-						blocking = [Set{Int}(), Set{Int}()]
-                                      		for key in keys(blockers_smart)
-						    if blockers_smart[key] == 1
-							union!(blocking[1], [key])
-						    elseif blockers_smart[key] == 2
-							union!(blocking[2], [key])
-						    elseif blockers_smart[key] == 3
-							union!(blocking[1], [key])
-							union!(blocking[2], [key])
-						    end
-						end
 						DiffusionModel.set_initial_conditions!(model, seed_tup)
-						DiffusionModel.set_blocking!(model, blocking)
+						model.blockedDict = blockers_smart
 
 						DiffusionModel.full_run(model)
 						blocking_summary_ilp_opt = DiffusionModel.getStateSummary(model)

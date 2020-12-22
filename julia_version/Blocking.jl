@@ -43,7 +43,7 @@ module Blocking
         return blockers
     end
 
-    function mcich(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int}, max_time::Int = Nothing)
+    function mcich(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int}, max_time = Nothing)
         blockings = Vector()
             blocking_point = [1,1]
 
@@ -119,8 +119,8 @@ module Blocking
   
             intersections = map(x->length(intersect(get(available_to_block, x, []), keys(to_block))), possible_blocking_nodes)
 
-	        best_node = possible_blocking_nodes[argmax(intersections)] 
-	        union!(best_blocking, [best_node])
+	    best_node = possible_blocking_nodes[argmax(intersections)] 
+            union!(best_blocking, [best_node])
 
             for node in get(available_to_block, best_node, [])
                 if node in keys(to_block)
@@ -237,10 +237,10 @@ module Blocking
         @objective(lp, Max, sum(x_i))
         optimize!(lp)
         if (termination_status(lp) == MOI.TIME_LIMIT) || (termination_status(lp) == MOI.OPTIMAL) 
-        blockers = Vector{Int}()
+        blockers = Set{Int}()
         for (index, y) in enumerate(y_j)
             if value.(y) == 1
-                append!(blockers, [available_to_block[index]])
+                union!(blockers, [available_to_block[index]])
             end
         end
         return blockers, number_to_block - objective_value(lp)
