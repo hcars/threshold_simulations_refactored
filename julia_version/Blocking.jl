@@ -43,7 +43,11 @@ module Blocking
         return blockers
     end
 
+<<<<<<< Updated upstream
     function mcich(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int}, max_time = Nothing)
+=======
+    function mcich(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int}, max_time::Int = length(updates))
+>>>>>>> Stashed changes
         blockings = Vector()
             blocking_point = [1,1]
 
