@@ -40,6 +40,7 @@ function main()
         for threshold in thresholds
             state = rand(UInt)
             model.θ_i = [UInt(threshold), UInt(threshold)]
+			model.ξ_i = [UInt8(1), UInt8(0)]
             DiffusionModel.set_initial_conditions!(model, seeds)
 
             seed_set_1 = Set{Int}()

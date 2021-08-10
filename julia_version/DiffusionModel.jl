@@ -13,6 +13,7 @@ mutable struct MultiDiffusionModel
     thresholdStates::Dict{Int,UInt32}
     blockedDict::Dict{Int,UInt}
     θ_i::Vector{UInt32}
+	ξ_i::Vector{UInt8}
     t::UInt32
 end
 
@@ -26,6 +27,7 @@ function MultiDiffusionModelConstructor(graph)
         thresholdStates,
         blockedDict,
         [UInt32(2), UInt32(2)],
+		[UInt8(0), UInt8(0)],
         UInt(0),
     )
 end
@@ -40,6 +42,22 @@ function MultiDiffusionModelConstructor(graph, θ_i::Vector{UInt32})
         thresholdStates,
         blockedDict,
         θ_i,
+		[UInt8(0), UInt8(0)],
+        UInt(0),
+    )
+end
+
+function MultiDiffusionModelConstructor(graph, θ_i::Vector{UInt32}, ξ_i::Vector{UInt8})
+    nodeStates = Dict{Int,UInt}()
+    blockedDict = Dict{Int,UInt}()
+    thresholdStates = Dict{Int,UInt32}()
+    return MultiDiffusionModel(
+        graph,
+        nodeStates,
+        thresholdStates,
+        blockedDict,
+        θ_i,
+		ξ_i,
         UInt(0),
     )
 end
@@ -110,18 +128,28 @@ function iterate!(model::MultiDiffusionModel)::Tuple
                     cnt_infected_2 += 1
                 end
             end
-            transition_1 = (cnt_infected_1 >= get(
+			interaction_term_1_2 = 0
+			if (u_state == 2)
+				interaction_term_1_2 = model.ξ_i[1]
+			end
+			interaction_term_2_1 = 0
+			if (u_state == 1)
+				interaction_term_2_1 = model.ξ_i[2]
+			end
+
+
+            transition_1 = (cnt_infected_1 >= (get(
                 model.thresholdStates,
                 u,
                 model.θ_i[1],
-            )) &&
+            ) - interaction_term_1_2 )) &&
                            ((get(model.blockedDict, u, 0) != 1) &&
                             (get(model.blockedDict, u, 0) != 3))
-            transition_2 = (cnt_infected_2 >= get(
+            transition_2 = (cnt_infected_2 >= (get(
                 model.thresholdStates,
                 u,
                 model.θ_i[2],
-            )) &&
+            ) - interaction_term_2_1)) &&
                            ((get(model.blockedDict, u, 0) != 2) &&
                             (get(model.blockedDict, u, 0) != 3))
             old_state = u_state
