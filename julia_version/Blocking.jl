@@ -76,7 +76,7 @@ function mcich(
         end
 
         to_block = [Dict{Int,UInt}(), Dict{Int,UInt}()]
-        next_dict_1, next_dict_2 = updates[j+1][1], updates[j+1][2]
+        next_dict = [updates[j+1][1], updates[j+1][2]]
         blocking_map = [Dict{Int,Vector}(), Dict{Int,Vector}()]
 
         neighbors_to_block = [Vector{Int}(), Vector{Int}()]
@@ -84,8 +84,8 @@ function mcich(
         for i = 1:2
             for node in available_to_block[i]
                 for neighbor in all_neighbors(model.network, node)
-                    if haskey(next_dict, neighbor)
-                        requirement = get(next_dict, neighbor, 0) -
+                    if haskey(next_dict[i], neighbor)
+                        requirement = get(next_dict[i], neighbor, 0) -
                                       get(
                             model.thresholdStates,
                             neighbor,
@@ -129,6 +129,7 @@ function coverage(
         possible_blocking_nodes_1,
         possible_blocking_nodes_2 = collect(keys(available_to_block[1])),
             collect(keys(available_to_block[2]))
+        possible_blocking_nodes = [possible_blocking_nodes_1, possible_blocking_nodes_2]
 
 
         intersections_1 = map(
@@ -153,7 +154,7 @@ function coverage(
             max_index = 2
         end
 
-        best_node = possible_blocking_nodes[argmax(intersections[max_index])]
+        best_node = possible_blocking_nodes[max_index][argmax(intersections[max_index])]
         union!(best_blocking[max_index], [best_node])
 
         for node in get(available_to_block[max_index], best_node, [])

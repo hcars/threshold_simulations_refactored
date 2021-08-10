@@ -10,11 +10,11 @@ module load gurobi/9.0.1
 
 directory_structure="../complex_net_proposal/experiment_networks/"
 input_paths=("${2}")
-output_append="../complex_net_proposal/experiment_results/results_mcich_smc.csv"
+output_append="./complex_nets_2021/experiment_results/results_mcich_smc.csv"
 
-random_seed=20591
+random_seed=14274
 
-repititions=100
+repititions=50
 
 seed_method=$1
 
@@ -23,6 +23,7 @@ blocking_method="MCICH_SMC"
 num_seeds=20
 for base in ${input_paths[@]};
 do
+
    full=$directory_structure
    full+=$base
    julia -O3 main.jl $full $repititions $seed_method $num_seeds $random_seed $output_append $blocking_method
