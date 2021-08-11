@@ -50,13 +50,14 @@ function mcich(
                 break
             end
         end
+        # Get the updated nodes for the time step j.
         find_blocking_1, find_blocking_2 = updates[j][1], updates[j][2]
 
         if isempty(find_blocking_1) && isempty(find_blocking_2)
             break
         end
-            # Here we are differencing the seed nodes out from the seed set.
-                    # This could be a source of randomness since the set object is unordered.
+        # Here we are differencing the seed nodes out from the seed sets.
+        # This could be a source of randomness since the set object is unordered.
         available_to_block_1 = setdiff(
             Set{Int}(keys(find_blocking_1)),
             seed_sets[1],
@@ -68,6 +69,7 @@ function mcich(
 
         available_to_block = [available_to_block_1, available_to_block_2]
 
+        # If there are less nodes to block than the budget use those.
         if length(available_to_block_1) + length(available_to_block_2) <= budget
             candidate_blocker[1], candidate_blocker[2] = available_to_block_1,
                 available_to_block_2
@@ -76,21 +78,40 @@ function mcich(
         end
 
         to_block = [Dict{Int,UInt}(), Dict{Int,UInt}()]
-        next_dict = [updates[j+1][1], updates[j+1][2]]
         blocking_map = [Dict{Int,Vector}(), Dict{Int,Vector}()]
 
         neighbors_to_block = [Vector{Int}(), Vector{Int}()]
 
+        # Get the next of set of nodes infected.
+        next_dict = [updates[j+1][1], updates[j+1][2]]
         for i = 1:2
             for node in available_to_block[i]
+                # Check if the nodes in the next set of infected nodes is in the neighbor of the current set of infected nodes.
                 for neighbor in all_neighbors(model.network, node)
                     if haskey(next_dict[i], neighbor)
+                        interaction_term = 0
+                        neighbor_state = get(model.nodeStates, neighbor, 0)
+                        if (i == 1)
+                            # Check if the node is infected at the final time step.
+                			if ((neighbor_state == 2) && (neighbor_state == 3))
+                				interaction_term = model.ξ_i[1]
+                            end
+                        elseif (i == 2)
+                            # Check if the node is infected at the final time step.
+                            if ((neighbor_state == 1) && (neighbor_state == 3))
+                                interaction_term = model.ξ_i[2]
+                            end
+                        end
+
+
+
+
                         requirement = get(next_dict[i], neighbor, 0) -
                                       get(
                             model.thresholdStates,
                             neighbor,
                             model.θ_i[i],
-                        ) + 1
+                        ) + interaction_term + 1
                         get!(to_block[i], neighbor, requirement)
                         append!(neighbors_to_block[i], [neighbor])
                     end

@@ -12,7 +12,7 @@ include("./SeedSelection.jl")
 function main()
 
     print(ARGS)
-# Parse CLAs
+    # Parse CLAs
     name = ARGS[1]
     repetitions = parse(Int, ARGS[2])
     seeding_method = ARGS[3]
