@@ -105,7 +105,7 @@ function mcich(
 
 
 
-
+                        # Compute requirements.
                         requirement = get(next_dict[i], neighbor, 0) -
                                       get(
                             model.thresholdStates,
