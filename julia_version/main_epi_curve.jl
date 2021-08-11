@@ -40,6 +40,8 @@ function main()
 				for interaction_1 = 0:1
 			            for interaction_2 = 0:1
 					state = rand(UInt)
+					model.θ_i = [UInt(threshold), UInt(threshold)]
+                    model.ξ_i = [UInt8(interaction_1), UInt8(interaction_2)]
 					DiffusionModel.set_initial_conditions!(model, seeds)
 
 					seed_set_1 = Set{Int}()
@@ -89,7 +91,7 @@ function main()
 
 		end
 
-		writedlm(out_file_name,  epi_curve_matrix, ',')
+		writedlm(String(interaction_1) * '_' * String(interaction_2) * '_' * out_file_name,  epi_curve_matrix, ',')
 end
 
 
