@@ -22,7 +22,7 @@ function main()
     blocking_method = ARGS[7]
 
     thresholds = [2, 3, 4]
-    budgets = append!([.0005, .001], collect(.005:.005:.07))
+    budgets = append!([.0005, .001], collect(.005:.01:.25))
     graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
     graph = SimpleGraph(graph_di)
     Random.seed!(random_seed)
@@ -37,8 +37,8 @@ function main()
         elseif seeding_method == "random_k_core"
             seeds = SeedSelection.choose_random_k_core(model, 20, num_seeds)
         end
-        for interaction_1 = 1:2
-            for interaction_2 = 1:2
+        for interaction_1 = 0:1
+            for interaction_2 = 0:1
                 for threshold in thresholds
                     state = rand(UInt)
                     model.θ_i = [UInt(threshold), UInt(threshold)]
@@ -65,10 +65,10 @@ function main()
                     no_block_summary = DiffusionModel.getStateSummary(model)
                     for budget in budgets
                         Random.seed!(state)
-						budget = Int(floor(nv(model.network)*budget))
+			budget = Int(floor(nv(model.network)*budget))
 
 
-						# Find the smart blocking method.
+			# Find the smart blocking method.
                         blockers_smart = Blocking.mcich(
                             model,
                             seed_tup,
@@ -106,8 +106,8 @@ function main()
                             string(threshold),
                             string(num_seeds),
                             string(budget),
-							string(interaction_1),
-							string(interaction_2),
+			    string(interaction_1),
+			    string(interaction_2),
                             string(blocking_method),
                         ]
                         append_results(

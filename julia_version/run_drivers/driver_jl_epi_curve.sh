@@ -9,24 +9,21 @@ module load julia/1.5.3
 module load gurobi/9.0.1
 
 directory_structure="../complex_net_proposal/experiment_networks/"
-input_paths=("${2}")
-output_append="./complex_nets_2021/experiment_results/results_mcich_smc.csv"
+input_paths=("fb-pages-politician.edges")
+output_append="./complex_nets_2021/experiment_results/results_epi_curves.csv"
 
 random_seed=20591
 
 repititions=10
 
-seed_method=$1
+seed_method="centola"
 
-blocking_method="MCICH_SMC"
 
 num_seeds=20
 for base in ${input_paths[@]};
 do
    full=$directory_structure
    full+=$base
-   julia -O3 main.jl $full $repititions $seed_method $num_seeds $random_seed $output_append $blocking_method
+   julia -O3 main_epi_curve.jl $full $repititions $seed_method $num_seeds $random_seed $output_append
 done
 
-sed -r -i  "s/.*experiment_networks\///g" $output_append
-sed -i 's/\.edges//g' $output_append
