@@ -19,18 +19,15 @@ function main()
 		num_seeds = parse(Int, ARGS[4])
 		random_seed = parse(Int, ARGS[5])
 		out_file_name = ARGS[6]
+                println(ARGS)
 
-		thresholds = [2,3,4]
+		thresholds = [3]
 		graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
 		graph = SimpleGraph(graph_di)
 		Random.seed!(random_seed)
-		if !isfile(out_file_name)
-			blocking_methods=["no_block"]
-			initialize_csv(out_file_name, blocking_methods)
-		end
 
 		max_time_step = Int(nv(graph)) * 2
-		epi_curve_matrix = Matrix(0, max_time_step)
+		epi_curve_matrix = zeros((10, max_time_step))
 
 		for i=1:repetitions
 			model = DiffusionModel.MultiDiffusionModelConstructor(graph)
@@ -40,8 +37,9 @@ function main()
 				seeds = SeedSelection.choose_random_k_core(model, 20, num_seeds)
 			end
 			for threshold in thresholds
+				for interaction_1 = 0:1
+			            for interaction_2 = 0:1
 					state = rand(UInt)
-					model.θ_i = [UInt(threshold), UInt(threshold)]
 					DiffusionModel.set_initial_conditions!(model, seeds)
 
 					seed_set_1 = Set{Int}()
@@ -60,33 +58,35 @@ function main()
 
 					no_blocking_results = DiffusionModel.full_run(model)
 					DiffusionModel.set_initial_conditions!(model, seed_tup)
-					newly_infected_nodes = Vector{Int}(undef, max_time_step)
+					newly_infected_nodes = zeros(max_time_step)
 
 					updates = Vector{Tuple}()
-				    updated = iterate!(model)
+				    updated = DiffusionModel.iterate!(model)
 					# Add first set of newly infected counts.
-					append!(newly_infected_nodes, [length(updated[1]) + length(updated[2])])
+					newly_infected_nodes[1]  = length(updated[1]) + length(updated[2])
 				    max_infections = nv(model.network)
 				    append!(updates, [updated])
 				    iter_count = 0
 				    while !(isempty(updated[1]) &&
 				            isempty(updated[2]) && iter_count < max_infections)
-				        updated = iterate!(model)
+				        updated = DiffusionModel.iterate!(model)
 						# Add first set of newly infected counts.
-						append!(newly_infected_nodes, [length(updated[1]) + length(updated[2])])
+						newly_infected_nodes[iter_count+2] = length(updated[1]) + length(updated[2])
 				        if !(isempty(updated[1]) && isempty(updated[2]))
 				            append!(updates, [updated])
 				        end
 				        iter_count += 1
 				    end
-
-					epi_curve_matrix = cat(1, epi_curve_matrix, newly_infected_nodes)
+                                        for j=1:max_time_step
+						epi_curve_matrix[i, j] =  newly_infected_nodes[j]
+					end
+				end
+				end
 				end
 
 
 
 
-			end
 		end
 
 		writedlm(out_file_name,  epi_curve_matrix, ',')
