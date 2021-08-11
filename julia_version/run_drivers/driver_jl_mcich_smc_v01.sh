@@ -12,7 +12,7 @@ directory_structure="../complex_net_proposal/experiment_networks/"
 input_paths=("${2}")
 output_append="./complex_nets_2021/experiment_results/results_mcich_smc.csv"
 
-random_seed=14274
+random_seed=20591
 
 repititions=50
 
@@ -23,7 +23,6 @@ blocking_method="MCICH_SMC"
 num_seeds=20
 for base in ${input_paths[@]};
 do
-
    full=$directory_structure
    full+=$base
    julia -O3 main.jl $full $repititions $seed_method $num_seeds $random_seed $output_append $blocking_method

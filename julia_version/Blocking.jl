@@ -59,11 +59,11 @@ function mcich(
                     # This could be a source of randomness since the set object is unordered.
         available_to_block_1 = setdiff(
             Set{Int}(keys(find_blocking_1)),
-            seed_nodes[1],
+            seed_sets[1],
         )
         available_to_block_2 = setdiff(
             Set{Int}(keys(find_blocking_2)),
-            seed_nodes[2],
+            seed_sets[2],
         )
 
         available_to_block = [available_to_block_1, available_to_block_2]

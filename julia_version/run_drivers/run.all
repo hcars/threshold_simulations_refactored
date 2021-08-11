@@ -1,0 +1,16 @@
+#!/bin/bash
+#SBATCH --job-name=aw
+#SBATCH --nodes=1
+#SBATCH --mincpus=16
+#SBATCH --time=94:00:00
+#SBATCH --output=../complex_net_proposal/log/production-%j.qlog
+#SBATCH -p bii
+module load julia/1.5.3
+module load gurobi/9.0.1
+
+networks=( "epinions.edges" "slashdot0811.edges" "enron.giant.clean.uel" ) 
+
+for network in ${networks[@]}
+do
+	./run_drivers/driver_jl_mcich_smc_v01.sh "centola" $network
+done
