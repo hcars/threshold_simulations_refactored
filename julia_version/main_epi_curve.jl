@@ -38,56 +38,55 @@ function main()
 			end
 			for threshold in thresholds
 				for interaction_1 = 0:1
-			            for interaction_2 = 0:1
-					state = rand(UInt)
-					model.θ_i = [UInt(threshold), UInt(threshold)]
-                    model.ξ_i = [UInt8(interaction_1), UInt8(interaction_2)]
-					DiffusionModel.set_initial_conditions!(model, seeds)
+			        for interaction_2 = 0:1
+						state = rand(UInt)
+						model.θ_i = [UInt(threshold), UInt(threshold)]
+	                    model.ξ_i = [UInt8(interaction_1), UInt8(interaction_2)]
+						DiffusionModel.set_initial_conditions!(model, seeds)
 
-					seed_set_1 = Set{Int}()
-					seed_set_2 = Set{Int}()
-					for node in keys(model.nodeStates)
-						if model.nodeStates[node] == 1
-							union!(seed_set_1, [node])
-						elseif model.nodeStates[node] == 2
-							union!(seed_set_2, [node])
-						else
-							union!(seed_set_1, [node])
-							union!(seed_set_2, [node])
+						seed_set_1 = Set{Int}()
+						seed_set_2 = Set{Int}()
+						for node in keys(model.nodeStates)
+							if model.nodeStates[node] == 1
+								union!(seed_set_1, [node])
+							elseif model.nodeStates[node] == 2
+								union!(seed_set_2, [node])
+							else
+								union!(seed_set_1, [node])
+								union!(seed_set_2, [node])
+							end
 						end
-					end
-					seed_tup = (seed_set_1, seed_set_2)
+						seed_tup = (seed_set_1, seed_set_2)
 
-					no_blocking_results = DiffusionModel.full_run(model)
-					DiffusionModel.set_initial_conditions!(model, seed_tup)
-					newly_infected_nodes = zeros(max_time_step)
+						no_blocking_results = DiffusionModel.full_run(model)
+						DiffusionModel.set_initial_conditions!(model, seed_tup)
+						newly_infected_nodes = zeros(max_time_step)
 
-					updates = Vector{Tuple}()
-				    updated = DiffusionModel.iterate!(model)
-					# Add first set of newly infected counts.
-					newly_infected_nodes[1]  = length(updated[1]) + length(updated[2])
-				    max_infections = nv(model.network)
-				    append!(updates, [updated])
-				    iter_count = 0
-				    while !(isempty(updated[1]) &&
-				            isempty(updated[2]) && iter_count < max_infections)
-				        updated = DiffusionModel.iterate!(model)
+						updates = Vector{Tuple}()
+					    updated = DiffusionModel.iterate!(model)
 						# Add first set of newly infected counts.
-						newly_infected_nodes[iter_count+2] = length(updated[1]) + length(updated[2])
-				        if !(isempty(updated[1]) && isempty(updated[2]))
-				            append!(updates, [updated])
-				        end
-				        iter_count += 1
-				    end
-                                        for j=1:max_time_step
-						epi_curve_matrix[i, j] =  newly_infected_nodes[j]
+						newly_infected_nodes[1]  = length(updated[1]) + length(updated[2])
+					    max_infections = nv(model.network)
+					    append!(updates, [updated])
+					    iter_count = 2
+					    while (!(isempty(updated[1]) && isempty(updated[2])) && (iter_count < max_infections))
+					        updated = DiffusionModel.iterate!(model)
+							# Add first set of newly infected counts.
+							newly_infected_nodes[iter_count] = length(updated[1]) + length(updated[2])
+					        if !(isempty(updated[1]) && isempty(updated[2]))
+					            append!(updates, [updated])
+					        end
+					        iter_count += 1
+					    end
+	                    for j=1:max_time_step
+							epi_curve_matrix[i, j] =  newly_infected_nodes[j]
+						end
+
+	                	writedlm(out_file_name * '_' * string(interaction_1) * '_' * string(interaction_2) ,  epi_curve_matrix , ',')
 					end
 
-                                writedlm(out_file_name * '_' * string(interaction_1) * '_' * string(interaction_2) ,  epi_curve_matrix , ',')
 				end
-
-				end
-				end
+			end
 
 
 
