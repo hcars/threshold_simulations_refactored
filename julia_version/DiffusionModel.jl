@@ -153,7 +153,11 @@ function iterate!(model::MultiDiffusionModel)::Tuple
             transition_2 = (cnt_infected_2 >= thres_2) &&
                            ((u_state != 2) &&
                             (u_state != 3))
+<<<<<<< HEAD
 
+=======
+            old_state = u_state
+>>>>>>> 0c38951680e2b7ea02823ed9188b045a3b6e0cfb
             if (transition_1 == true)
                 get!(updated_1, u, cnt_infected_1)
             end
