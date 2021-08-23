@@ -66,7 +66,16 @@ function set_initial_conditions!(model::MultiDiffusionModel, seeds::Set{Int})
     nodeStates = Dict{Int,UInt}()
     model.blockedDict = Dict{Int,UInt}()
     for seed in seeds
-        infection = rand(1:3)
+        draw = rand()
+        if (0 <= draw <= .6)
+            infection = 1
+        elseif (.6 < draw <= .9 )
+            infection = 2
+        elseif (.9 < draw <= 1)
+            infection = 3
+        end
+
+
         get!(nodeStates, seed, infection)
     end
     model.t = UInt32(0)
@@ -153,11 +162,7 @@ function iterate!(model::MultiDiffusionModel)::Tuple
             transition_2 = (cnt_infected_2 >= thres_2) &&
                            ((u_state != 2) &&
                             (u_state != 3))
-<<<<<<< HEAD
 
-=======
-            old_state = u_state
->>>>>>> 0c38951680e2b7ea02823ed9188b045a3b6e0cfb
             if (transition_1 == true)
                 get!(updated_1, u, cnt_infected_1)
             end
