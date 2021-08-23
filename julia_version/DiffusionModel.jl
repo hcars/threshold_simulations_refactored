@@ -136,11 +136,7 @@ function iterate!(model::MultiDiffusionModel)::Tuple
 			if (u_state == 1)
 				interaction_term_2_1 = model.ξ_i[2]
 			end
-            println(get(
-                model.thresholdStates,
-                u,
-                model.θ_i[1],
-            ) - interaction_term_1_2)
+            println(interaction_term_1_2)
 
             transition_1 = (cnt_infected_1 >= (get(
                 model.thresholdStates,
