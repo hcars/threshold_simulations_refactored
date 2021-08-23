@@ -141,7 +141,7 @@ function iterate!(model::MultiDiffusionModel)::Tuple
                 model.thresholdStates,
                 u,
                 model.θ_i[1],
-            ) - interaction_term_1_2 )
+            ) - interaction_term_1_2
             transition_1 = (cnt_infected_1 >= thres_1) &&
                            ((get(model.blockedDict, u, 0) != 1) &&
                             (get(model.blockedDict, u, 0) != 3))
@@ -153,7 +153,7 @@ function iterate!(model::MultiDiffusionModel)::Tuple
             transition_2 = (cnt_infected_2 >= thres_2) &&
                            ((get(model.blockedDict, u, 0) != 2) &&
                             (get(model.blockedDict, u, 0) != 3))
-            println(thres_2A)
+            println(thres_2)
             old_state = u_state
             if ((transition_1 == true) && (old_state != 1))
                 get!(updated_1, u, cnt_infected_1)
