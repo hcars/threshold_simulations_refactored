@@ -37,38 +37,37 @@ function main()
         elseif seeding_method == "random_k_core"
             seeds = SeedSelection.choose_random_k_core(model, 20, num_seeds)
         end
-        for interaction_1 = 0:1
-            for interaction_2 = 0:1
+        DiffusionModel.set_initial_conditions!(model, seeds)
+
+        seed_set_1 = Set{Int}()
+        seed_set_2 = Set{Int}()
+        for node in keys(model.nodeStates)
+            if model.nodeStates[node] == 1
+                union!(seed_set_1, [node])
+            elseif model.nodeStates[node] == 2
+                union!(seed_set_2, [node])
+            else
+                union!(seed_set_1, [node])
+                union!(seed_set_2, [node])
+            end
+        end
+        seed_tup = (seed_set_1, seed_set_2)
+        for interaction_1 = 0:2
+            for interaction_2 = 0:2
                 for threshold in thresholds
                     state = rand(UInt)
                     model.θ_i = [UInt(threshold), UInt(threshold)]
                     model.ξ_i = [UInt8(interaction_1), UInt8(interaction_2)]
-                    DiffusionModel.set_initial_conditions!(model, seeds)
 
-                    seed_set_1 = Set{Int}()
-                    seed_set_2 = Set{Int}()
-                    for node in keys(model.nodeStates)
-                        if model.nodeStates[node] == 1
-                            union!(seed_set_1, [node])
-                        elseif model.nodeStates[node] == 2
-                            union!(seed_set_2, [node])
-                        else
-                            union!(seed_set_1, [node])
-                            union!(seed_set_2, [node])
-                        end
-                    end
-                    seed_tup = (seed_set_1, seed_set_2)
-
-                    no_blocking_results = DiffusionModel.full_run(model)
                     DiffusionModel.set_initial_conditions!(model, seed_tup)
                     no_blocking_results = DiffusionModel.full_run(model)
                     no_block_summary = DiffusionModel.getStateSummary(model)
                     for budget in budgets
                         Random.seed!(state)
-			budget = Int(floor(nv(model.network)*budget))
+            			budget = Int(floor(nv(model.network)*budget))
 
 
-			# Find the smart blocking method.
+            			# Find the smart blocking method.
                         blockers_smart = Blocking.mcich(
                             model,
                             seed_tup,
