@@ -1,0 +1,1 @@
+["../complex_net_proposal/experiment_networks/fb-pages-politician.edges", "25", "centola", "20", "20591", "./complex_nets_2021/experiment_results/results_epi_curves.csv"]

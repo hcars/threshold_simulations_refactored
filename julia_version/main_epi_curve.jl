@@ -24,10 +24,10 @@ function main()
 		thresholds = [3]
 		graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
 		graph = SimpleGraph(graph_di)
-		Random.seed!(random_seed)
 
+		Random.seed!(random_seed)
 		max_time_step = Int(nv(graph)) * 2
-		epi_curve_matrix = zeros((10, max_time_step))
+		epi_curve_matrix = zeros((repetitions, max_time_step))
 
 		for i=1:repetitions
 			model = DiffusionModel.MultiDiffusionModelConstructor(graph)
@@ -41,6 +41,7 @@ function main()
 			        for interaction_2 = 0:1
 						state = rand(UInt)
 						model.θ_i = [UInt(threshold), UInt(threshold)]
+						Random.seed!(random_seed)
 	                    model.ξ_i = [UInt8(interaction_1), UInt8(interaction_2)]
 						DiffusionModel.set_initial_conditions!(model, seeds)
 
@@ -78,9 +79,9 @@ function main()
 					        end
 					        iter_count += 1
 					    end
-	                    for j=1:max_time_step
+			                    for j=1:max_time_step
 							epi_curve_matrix[i, j] =  newly_infected_nodes[j]
-						end
+					    end
 
 	                	writedlm(out_file_name * '_' * string(interaction_1) * '_' * string(interaction_2) ,  epi_curve_matrix , ',')
 					end

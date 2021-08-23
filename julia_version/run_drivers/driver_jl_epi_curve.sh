@@ -14,7 +14,7 @@ output_append="./complex_nets_2021/experiment_results/results_epi_curves.csv"
 
 random_seed=20591
 
-repititions=10
+repititions=25
 
 seed_method="centola"
 
