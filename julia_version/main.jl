@@ -110,6 +110,8 @@ function main()
 			    string(interaction_2),
                             string(blocking_method),
                         ]
+			println(string(interaction_1))
+			println(string(interaction_2))
                         append_results(
                             out_file_name,
                             blocking_summaries,

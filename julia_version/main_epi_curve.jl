@@ -82,7 +82,10 @@ function main()
                                         for j=1:max_time_step
 						epi_curve_matrix[i, j] =  newly_infected_nodes[j]
 					end
+
+                                writedlm(out_file_name * '_' * string(interaction_1) * '_' * string(interaction_2) ,  epi_curve_matrix , ',')
 				end
+
 				end
 				end
 
@@ -91,7 +94,6 @@ function main()
 
 		end
 
-		writedlm(String(interaction_1) * '_' * String(interaction_2) * '_' * out_file_name,  epi_curve_matrix, ',')
 end
 
 
