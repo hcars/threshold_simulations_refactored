@@ -66,16 +66,7 @@ function set_initial_conditions!(model::MultiDiffusionModel, seeds::Set{Int})
     nodeStates = Dict{Int,UInt}()
     model.blockedDict = Dict{Int,UInt}()
     for seed in seeds
-        draw = rand()
-        if (0 <= draw <= .6)
-            infection = 1
-        elseif (.6 < draw <= .9 )
-            infection = 2
-        elseif (.9 < draw <= 1)
-            infection = 3
-        end
-
-
+	infection = rand(1:3)
         get!(nodeStates, seed, infection)
     end
     model.t = UInt32(0)
