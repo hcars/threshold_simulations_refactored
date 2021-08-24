@@ -115,6 +115,7 @@ function iterate!(model::MultiDiffusionModel)::Tuple
     updated_2 = Dict{Int,UInt32}()
     for u in vertices(model.network)
         u_state = get(model.nodeStates, u, 0)
+        u_blocked_state = get(model.blockedDict, u, 0)
         if (u_state != 3)
             cnt_infected_1 = UInt32(0)
             cnt_infected_2 = UInt32(0)
@@ -144,7 +145,7 @@ function iterate!(model::MultiDiffusionModel)::Tuple
             ) - interaction_term_1_2
             transition_1 = (cnt_infected_1 >= thres_1) &&
                            ((u_state != 1) &&
-                            (u_state != 3))
+                            (u_state != 3) && (u_blocked_state != 1) && (u_blocked_state != 3))
             thres_2 = get(
                 model.thresholdStates,
                 u,
@@ -152,7 +153,7 @@ function iterate!(model::MultiDiffusionModel)::Tuple
             ) - interaction_term_2_1
             transition_2 = (cnt_infected_2 >= thres_2) &&
                            ((u_state != 2) &&
-                            (u_state != 3))
+                            (u_state != 3) && (u_blocked_state != 2) && (u_blocked_state != 3))
 
             if (transition_1 == true)
                 get!(updated_1, u, cnt_infected_1)
