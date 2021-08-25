@@ -10,13 +10,13 @@ module load gurobi/9.0.1
 
 directory_structure="../complex_net_proposal/experiment_networks/"
 input_paths=("fb-pages-politician.edges")
-output_append="./complex_nets_2021/experiment_results/results_epi_curves.csv"
+output_append="./complex_nets_2021/experiment_results/k_core_results_epi_curves.csv"
 
 random_seed=20591
 
-repititions=25
+repititions=10
 
-seed_method="centola"
+seed_method="random_k_core"
 
 
 num_seeds=20

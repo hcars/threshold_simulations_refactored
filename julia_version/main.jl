@@ -91,8 +91,12 @@ function main()
                         )
                         DiffusionModel.set_initial_conditions!(model, seed_tup)
                         DiffusionModel.set_blocking!(model, blockers_degree)
+			println(model.blockedDict)
+			println(model.nodeStates)
                         DiffusionModel.full_run(model)
                         blocking_summary_degree = DiffusionModel.getStateSummary(model)
+			println(no_block_summary)
+                        println(blocking_summary_degree)
 
                         blocking_summaries = [
                             no_block_summary,

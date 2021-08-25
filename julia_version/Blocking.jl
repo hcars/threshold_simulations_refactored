@@ -169,9 +169,15 @@ function coverage(
         intersections = [intersections_1, intersections_2]
 
         max_index = 1
-        if maximum(intersections[1]) < maximum(intersections[2])
-            max_index = 2
-        end
+        if isempty(intersections[1])
+		max_index = 2
+        elseif isempty(intersections[2])
+		max_index = 1
+        else
+		if maximum(intersections[1]) < maximum(intersections[2])
+		    max_index = 2
+		end
+ 	end
 
         best_node = possible_blocking_nodes[max_index][argmax(intersections[max_index])]
         union!(best_blocking[max_index], [best_node])
