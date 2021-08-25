@@ -20,9 +20,20 @@ seed_method=$1
 
 blocking_method="MCICH_SMC"
 
-num_seeds=20
+num_seeds=100
 for base in ${input_paths[@]};
 do
+   if [ "$base" == "astroph.edges" ]
+	then
+	num_seeds=50
+   elif [ "$base" == "fb-pages-politician.edges" ]
+	then
+	num_seeds=100
+   elif [ "$base" == "wiki.edges" ]
+	then
+	num_seeds=5
+	fi
+    	
    full=$directory_structure
    full+=$base
    julia -O3 main.jl $full $repititions $seed_method $num_seeds $random_seed $output_append $blocking_method

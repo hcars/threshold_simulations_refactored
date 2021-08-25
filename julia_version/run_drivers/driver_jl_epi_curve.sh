@@ -14,12 +14,12 @@ output_append="./complex_nets_2021/experiment_results/k_core_results_epi_curves.
 
 random_seed=20591
 
-repititions=10
+repititions=20
 
 seed_method="random_k_core"
 
 
-num_seeds=20
+num_seeds=30
 for base in ${input_paths[@]};
 do
    full=$directory_structure

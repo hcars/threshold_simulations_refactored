@@ -21,7 +21,7 @@ function main()
 		out_file_name = ARGS[6]
                 println(ARGS)
 
-		thresholds = [3]
+		thresholds = [5]
 		graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
 		graph = SimpleGraph(graph_di)
 
@@ -53,8 +53,8 @@ function main()
 
 
 			for threshold in thresholds
-				for interaction_1 = 0:2
-			        for interaction_2 = 0:2
+				for interaction_1 = 0:3
+			        for interaction_2 = 0:3
 						state = rand(UInt)
 						model.θ_i = [UInt(threshold), UInt(threshold)]
 	                    model.ξ_i = [UInt8(interaction_1), UInt8(interaction_2)]

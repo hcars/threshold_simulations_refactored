@@ -21,7 +21,7 @@ function main()
     out_file_name = ARGS[6]
     blocking_method = ARGS[7]
 
-    thresholds = [2, 3, 4]
+    thresholds = [3, 4, 5, 6]
     budgets = append!([.0005, .001], collect(.005:.01:.25))
     graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
     graph = SimpleGraph(graph_di)
@@ -52,9 +52,10 @@ function main()
             end
         end
         seed_tup = (seed_set_1, seed_set_2)
-        for interaction_1 = 0:2
-            for interaction_2 = 0:2
-                for threshold in thresholds
+
+        for threshold in thresholds
+		for interaction_1 = 0:3
+		    for interaction_2 = 0:3
                     state = rand(UInt)
                     model.θ_i = [UInt(threshold), UInt(threshold)]
                     model.ξ_i = [UInt8(interaction_1), UInt8(interaction_2)]
@@ -91,12 +92,8 @@ function main()
                         )
                         DiffusionModel.set_initial_conditions!(model, seed_tup)
                         DiffusionModel.set_blocking!(model, blockers_degree)
-			println(model.blockedDict)
-			println(model.nodeStates)
                         DiffusionModel.full_run(model)
                         blocking_summary_degree = DiffusionModel.getStateSummary(model)
-			println(no_block_summary)
-                        println(blocking_summary_degree)
 
                         blocking_summaries = [
                             no_block_summary,
@@ -113,8 +110,6 @@ function main()
 			    string(interaction_2),
                             string(blocking_method),
                         ]
-			println(string(interaction_1))
-			println(string(interaction_2))
                         append_results(
                             out_file_name,
                             blocking_summaries,
