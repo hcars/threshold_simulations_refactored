@@ -204,6 +204,109 @@ function coverage(
     return best_blocking, length(to_block[1]) + length(to_block[2])
 end
 
+
+
+function mcich_org(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int}, max_time = Nothing)
+        blockings = Vector()
+            blocking_point = [1,1]
+
+            for i=1:length(budgets)
+                budget = budgets[i]
+                candidate_blocker = Vector{Int}()
+                unblocked_min = Inf
+                seed_nodes = seed_sets[i]
+                for j=1:length(updates) - 1
+                    if max_time != Nothing
+                        if j >= max_time
+                            break
+                        end
+                    end
+                    find_blocking = updates[j][i]
+                    if isempty(find_blocking)
+                        break
+                    end
+		            # Here we are differencing the seed nodes out from the seed set.
+                    # This could be a source of randomness since the set object is unordered.
+                    available_to_block = setdiff(Set{Int}(keys(find_blocking)), seed_nodes)
+                    if length(available_to_block) <= budget
+                        candidate_blocker = available_to_block
+                        blocking_point[i] = j
+
+                        break
+                    end
+                    to_block = Dict{Int, UInt}()
+                    next_dict = updates[j+1][i]
+                    blocking_map = Dict{Int, Vector}()
+
+                    for node in available_to_block
+                        neighbors_to_block = Vector{Int}()
+                        for neighbor in all_neighbors(model.network, node)
+                            if haskey(next_dict, neighbor)
+                                requirement = get(next_dict, neighbor, 0) - get(model.thresholdStates, neighbor, model.θ_i[i]) + 1
+                                get!(to_block, neighbor, requirement)
+                                append!(neighbors_to_block, [neighbor])
+                            end
+                        end
+                        get!(blocking_map, node, neighbors_to_block)
+                    end
+                    if isempty(to_block)
+                        break
+                    end
+                    current_blocking, unblocked = coverage(blocking_map, to_block, budget)
+                    if unblocked == 0
+                        candidate_blocker = current_blocking
+                        blocking_point[i] = j
+                        break
+                    elseif unblocked < unblocked_min
+                        candidate_blocker = current_blocking
+                        unblocked_min = unblocked
+                        blocking_point[i]  = j
+                    end
+                end
+            append!(blockings, [collect(candidate_blocker)])
+            if length(blockings) < budget && i < length(budgets)
+                budgets[i+1] += budget - length(blockings)
+            end
+        end
+        return blockings, blocking_point
+    end
+
+
+
+    function coverage_org(available_to_block::Dict{Int, Vector}, to_block::Dict{Int, UInt}, budget::Int)
+        upperLimit = minimum([budget, length(available_to_block)])
+        best_blocking = Set{Int}()
+        for i=1:upperLimit
+            possible_blocking_nodes = collect(keys(available_to_block))
+
+
+            intersections = map(x->length(intersect(get(available_to_block, x, []), keys(to_block))), possible_blocking_nodes)
+
+	    best_node = possible_blocking_nodes[argmax(intersections)]
+            union!(best_blocking, [best_node])
+
+            for node in get(available_to_block, best_node, [])
+                if node in keys(to_block)
+
+                    requirement = get(to_block, node, 0)
+                    requirement -= 1
+                    delete!(to_block, node)
+
+                    if requirement > 0
+                        get!(to_block, node, requirement)
+                    end
+                end
+            end
+            delete!(available_to_block, best_node)
+
+            if isempty(to_block)
+                break
+            end
+        end
+
+        return best_blocking, length(keys(to_block))
+    end
+
 function mcich_optimal(
     model,
     seed_sets::Tuple{Set{Int},Set{Int}},
