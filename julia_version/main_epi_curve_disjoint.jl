@@ -27,8 +27,10 @@ function main()
 
 		Random.seed!(random_seed)
 		max_time_step = Int(nv(graph))
-		epi_curve_matrix_1 = zeros((repetitions, max_time_step))
-		epi_curve_matrix_2 = zeros((repetitions, max_time_step))
+		interaction_1_max = 0
+		interaction_2_max = 7
+		epi_curve_matrix_1 = zeros((repetitions, interaction_1_max + 1, interaction_2_max + 1, max_time_step))
+		epi_curve_matrix_2 = zeros((repetitions, interaction_1_max + 1, interaction_2_max + 1, max_time_step))
 
 		for i=1:repetitions
 			model = DiffusionModel.MultiDiffusionModelConstructor(graph)
@@ -51,8 +53,8 @@ function main()
 			seed_tup = (seed_set_1, seed_set_2)
 
 			for threshold in thresholds
-				for interaction_1 = 0:0
-				        for interaction_2 = 0:7
+				for interaction_1 = 0:interaction_1_max
+				        for interaction_2 = 0:interaction_2_max
 						state = rand(UInt)
 						model.θ_i = [UInt(3), UInt(8)]
 	                    model.ξ_i = [UInt8(0), UInt8(interaction_2)]
@@ -70,8 +72,8 @@ function main()
 						updates = Vector{Tuple}()
 					    updated = DiffusionModel.iterate!(model)
 				   	    # Add first set of newly infected counts.
-					    epi_curve_matrix_1[1] = length(updated[1])
-					    epi_curve_matrix_2[2] = length(updated[2])
+					    epi_curve_matrix_1[i, interaction_1 + 1, interaction_2 + 1, 1] = length(updated[1])
+					    epi_curve_matrix_2[i, interaction_1 + 1, interaction_2 + 1, 2] = length(updated[2])
 
 					    max_infections = nv(model.network)
 					    append!(updates, [updated])
@@ -79,10 +81,8 @@ function main()
 					    while (!(isempty(updated[1]) && isempty(updated[2])) && (iter_count < max_infections))
 					        updated = DiffusionModel.iterate!(model)
 							# Add first set of newly infected counts.
-							epi_curve_matrix_1[iter_count] = length(updated[1])
-							epi_curve_matrix_2[iter_count] = length(updated[2])
-							println(epi_curve_matrix_1[iter_count])
-							println(epi_curve_matrix_2[iter_count])
+							epi_curve_matrix_1[i, interaction_1 + 1, interaction_2 + 1, iter_count] = length(updated[1])
+							epi_curve_matrix_2[i, interaction_1 + 1, interaction_2 + 1, iter_count] = length(updated[2])
 
 
 					        iter_count += 1
@@ -91,15 +91,20 @@ function main()
 					        end
 					    end
 						println(DiffusionModel.getStateSummary(model))
-						println(sum(epi_curve_matrix_1) + sum(epi_curve_matrix_2))
 			
 
 
-	                	writedlm(out_file_name * "_contagion_1_interaction_" * string(interaction_1) * '_' * string(interaction_2),   epi_curve_matrix_1 , ',')
-	                	writedlm(out_file_name * "_contagion_2_interaction_" * string(interaction_1) * '_' * string(interaction_2),  epi_curve_matrix_2 , ',')
-					end
+	               					end
 
 				end
+			end
+			for interaction_1 = 0:interaction_1_max
+				        for interaction_2 = 0:interaction_2_max
+
+		 	writedlm(out_file_name * "_contagion_1_interaction_" * string(interaction_1) * '_' * string(interaction_2),   epi_curve_matrix_1[:, interaction_1 + 1, interaction_2 + 1, :] , ',')
+	                writedlm(out_file_name * "_contagion_2_interaction_" * string(interaction_1) * '_' * string(interaction_2),  epi_curve_matrix_2[:, interaction_1 + 1, 
+interaction_2 + 1, :] , ',')
+			end
 			end
 
 

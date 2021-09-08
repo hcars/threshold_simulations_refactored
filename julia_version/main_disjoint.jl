@@ -21,7 +21,6 @@ function main()
     out_file_name = ARGS[6]
     blocking_method = ARGS[7]
 
-    thresholds = [3, 4, 5, 6]
     budgets = append!([.0005, .001], collect(.005:.01:.25))
     graph_di = loadgraph(name, name, GraphIO.EdgeList.EdgeListFormat())
     graph = SimpleGraph(graph_di)
@@ -53,14 +52,10 @@ function main()
         end
         seed_tup = (seed_set_1, seed_set_2)
 
-        for threshold in thresholds
-		for interaction_1 = 0:3
-		    for interaction_2 = 0:3
-	            if (((interaction_1 == 3) | (interaction_2 == 3)) & (threshold == 3) )
-			continue
-		    end
+		for interaction_1 = 0:1
+		    for interaction_2 = 0:6
                     state = rand(UInt)
-                    model.θ_i = [UInt(threshold), UInt(threshold)]
+                    model.θ_i = [UInt(3), UInt(8)]
                     model.ξ_i = [UInt8(interaction_1), UInt8(interaction_2)]
 
                     DiffusionModel.set_initial_conditions!(model, seed_tup)
@@ -72,15 +67,12 @@ function main()
 
 
             			# Find the smart blocking method.
-                        start = time()
                         blockers_smart = Blocking.mcich(
                             model,
                             seed_tup,
                             no_blocking_results,
                             budget,
                         )[1]
-                        end_time = time()
-			timing = string(end_time - start)
 
                         DiffusionModel.set_initial_conditions!(model, seed_tup)
                         DiffusionModel.set_blocking!(model, blockers_smart)
@@ -109,12 +101,10 @@ function main()
                         metadata = [
                             name,
                             seeding_method,
-                            string(threshold),
                             string(num_seeds),
                             string(budget),
 			    string(interaction_1),
 			    string(interaction_2),
-                            string(timing),
                             string(blocking_method),
                         ]
                         append_results(
@@ -123,7 +113,6 @@ function main()
                             metadata,
                         )
                         println("Append complete")
-		    end
                 end
             end
         end
@@ -132,7 +121,7 @@ end
 
 
 function initialize_csv(filename::String, blocking_methods)
-    header = "network_name,seed_method,threshold,seed_size,budget_total,interaction_1_2,interaction_2_1,timing,smart_method,"
+    header = "network_name,seed_method,seed_size,budget_total,interaction_1_2,interaction_2_1,smart_method,"
     for i = 1:length(blocking_methods)
         for j = 0:3
             curr_count_name = blocking_methods[i] * '_' * string(j)
