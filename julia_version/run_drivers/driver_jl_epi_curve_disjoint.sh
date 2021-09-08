@@ -19,7 +19,7 @@ repititions=20
 seed_method="random_k_core"
 
 
-num_seeds=20
+num_seeds=30
 for base in ${input_paths[@]};
 do
    full=$directory_structure
