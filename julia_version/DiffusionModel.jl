@@ -6,140 +6,233 @@ module DiffusionModel
 
 
 
-
-	mutable struct MultiDiffusionModel 
+	# Define the DiffusionModel object.
+	mutable struct MultiDiffusionModel
+		"""
+		DiffusionModel is the object that implements the threshold model for an
+			arbitrary number of contagions.
+		"""
 		network::SimpleGraph
-		nodeStates::Dict{Int,UInt}
-		thresholdStates::Dict{Int,UInt32}
-		blockedDict::Dict{Int, UInt}
-		θ_i :: Vector{UInt32}
+		states::Matrix{UInt}
+		thresholds::Matrix{UInt}
+		blocked::Dict{Int, Set}
 		t::UInt32
 	end
 
-	function MultiDiffusionModelConstructor(graph)
-		nodeStates = Dict{Int, UInt}()
-		blockedDict = Dict{Int, UInt}()
-		thresholdStates = Dict{Int, UInt32}()
-		return MultiDiffusionModel(graph, nodeStates, thresholdStates, blockedDict, [UInt32(2), UInt32(2)], UInt(0))
+	# These constructors simplify creating DiffusionModel objects.
+	function MultiDiffusionModelConstructor(graph, num_contagions::Number)
+		"""
+		This constructor creates a threshold model with the given number of
+		contagions and input graph. The threshold is set uniformly to 2.
+		"""
+		states = zeros(UInt, (nv(graph), num_contagions))
+		thresholds = fill(UInt(2), (nv(graph), num_contagions))
+		blocked = Dict{Int, Set}()
+		return MultiDiffusionModel(graph, states, thresholds, blocked, UInt(0))
 	end
 
-	function MultiDiffusionModelConstructor(graph, θ_i::Vector{UInt32})
-		nodeStates = Dict{Int, UInt}()
-		blockedDict = Dict{Int, UInt}()
-		thresholdStates = Dict{Int, UInt32}()
-		return MultiDiffusionModel(graph, nodeStates, thresholdStates, blockedDict, θ_i, UInt(0))
+	function MultiDiffusionModelConstructor(graph, num_contagions::Number, uniform_thresholds::Vector{UInt})
+		"""
+		This constructor creates a threshold model with the given number of
+		contagions and input graph. The threshold is set uniformly to 2.
+		This constructor will fill in the threshold uniformly per contagion per node.
+		"""
+		states = zeros(UInt, (nv(graph), num_contagions))
+		thresholds = Matrix{UInt}(undef, nv(graph), num_contagions)
+		for i=1:length(uniform_thresholds)
+			curr_threshold = uniform_thresholds[i]
+			thresholds[:, i] = fill(curr_threshold, num_contagions)
+		end
+		blocked = Dict{Int, Set}()
+		return MultiDiffusionModel(graph, states, thresholds, blocked, UInt(0))
 	end
 
-	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Set{Int})
-		nodeStates = Dict{Int, UInt}()
-		model.blockedDict =  Dict{Int, UInt}()
+	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Set{Int}, num_contagions::UInt)
+		"""
+		This function resets the model to its initial conditions; all contagions are set to zero and the blocking nodes are removed.
+		The input set of seed nodes is chosen to be infected with each contagion with 1/2 probability.
+		"""
+		states = zeros(UInt, (nv(graph), num_contagions))
+		model.blocked =  Dict{Int, Set}()
 		for seed in seeds
-			infection = rand(1:3)
-			get!(nodeStates, seed, infection)
+			# Do a coin flip to determine if a node is infected with a contagion.
+			for curr_contagion=1:num_contagions
+				flip = rand(1:2)
+				if flip == 2
+					states[seed, curr_contagion] = 1
+				end
+			end
+
 		end
 		model.t = UInt32(0)
-		model.nodeStates = nodeStates
+		model.states = states
 	end
 
-	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Tuple{Set{Int}, Set{Int}})
-		nodeStates = Dict{Int, UInt}()
-		model.blockedDict =  Dict{Int, UInt}()
+
+	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Vector{Set})
+		"""
+		This function resets the model to its initial conditions; all contagions are set to zero and the blocking nodes are removed
+		The seeds input will assumes there is a list of seed of nodes for each contagion.
+		i.e. at index 1 there is a set of seed nodes for contagion 1. At index 4, for contagion 4
+		, etc
+		"""
+		states = zeros(UInt, (nv(graph), num_contagions))
+		model.blocked =  Dict{Int, Set}()
 		for i=1:length(seeds)
-			for seed in seeds[i]
-				value = get!(nodeStates, seed, 0)
-				value += i 
-				
-				delete!(nodeStates, seed)
-				get!(nodeStates, seed, value)
+			curr_seed_set
+			for seed in curr_seed_set
+				states[seed, i] = 1
 			end
 		end
 		model.t = UInt32(0)
-		model.nodeStates = nodeStates
+		model.states = states
 	end
 
 	function set_blocking!(model::MultiDiffusionModel, blockers::Vector)
-		blockingDict = Dict{Int, UInt}()
+		"""
+		Given a list of lists that contain the blocking node for each contagion
+		We set blocking to be true.
+		"""
+		blocked = Dict{Int, Set}()
+		# Iterate through each contagion.
 		for i=1:length(blockers)
 			curr_set = blockers[i]
+			# Iterate through each blocker for each contagion.
 			for node in curr_set
-				state = get(blockingDict, node, 0)
-				state += i 
-				delete!(blockingDict, node)
-				get!(blockingDict, node, state)
+				# Get the set of contagions already blocked for the node
+				contagions_blocked = get(blocked, node, Set())
+				# Add this contagion to the set
+				contagions_blocked = union!(contagions_blocked, [i])
+				# Delete the old set
+				delete!(blocked, node)
+				# Put in the new set
+				get!(blocked, node, contagions_blocked)
 			end
 		end
-		model.blockedDict = blockingDict
+		# Set the blocking
+		model.blocked = blocked
 	end
 
-	function iterate!(model::MultiDiffusionModel)::Tuple
+	function iterate!(model::MultiDiffusionModel)::Array
 		"""
-		This completes a one time step update.
+		This completes a one time step update. It only needs the model as input.
+		It iterates through each node and checks to see if it meets the criteria
+		to transition up in state.
 		"""
-		updated_1 = Dict{Int, UInt32}()	
-		updated_2 = Dict{Int, UInt32}()
+		# This gives the history of updated nodes and how many neighbors caused the infection.
+		# We create the list with this instead of fill because fill will create references
+		# to the same dictionary.
+		updated = Vector{Dict{Int, UInt32}}(undef, size(model.states)[2])
+		for curr_contagion=1:size(model.states)[2]
+			updated[curr_contagion] = Dict{Int, UInt32}()
+		end
+		# Iterate through each vertex
 		for u in vertices(model.network)
-			u_state = get(model.nodeStates, u, 0);
-				if (u_state != 3)
-					cnt_infected_1 = UInt32(0);
-					cnt_infected_2 = UInt32(0);
-						for v in all_neighbors(model.network, u) 	
-							if (get(model.nodeStates, v, 0) == 1 || get(model.nodeStates, v, 0) == 3)
-								cnt_infected_1 += 1;
-							end
-							if (get(model.nodeStates, v, 0) == 2 || get(model.nodeStates, v, 0) == 3)
-								cnt_infected_2 += 1;
-							end
-						end
-					transition_1 = (cnt_infected_1 >= get(model.thresholdStates, u, model.θ_i[1])) && ((get(model.blockedDict, u, 0) != 1) && (get(model.blockedDict, u, 0) != 3));
-					transition_2 = (cnt_infected_2 >= get(model.thresholdStates, u, model.θ_i[2])) &&  ((get(model.blockedDict, u, 0) != 2) && (get(model.blockedDict, u, 0) != 3));
-					old_state = u_state
-					if ((transition_1 == true) && (old_state != 1))
-						get!(updated_1, u, cnt_infected_1)
+				# Get what contagions it's blocked for
+				blocked_for = get(model.blocked, u, Set{}())
+				@inbounds for i=1:size(model.states)[2]
+					# Check to ensure that it is not blocked for that contagion and the node is not already infected for the contagion.
+					if (i in blocked_for) || (model.states[u, i] == 1)
+						continue
 					end
-					if ((transition_2 == true) && (old_state != 2))
-						get!(updated_2, u, cnt_infected_2)
+					# Initialize constants
+					transition = false
+					cnt_infected_neighbors = 0
+
+					# Get the list of neighbors
+					neighbors = all_neighbors(model.network, u)
+					# Add the neighbors infected with that contagion
+					cnt_infected_neighbors = sum(getindex(model.states[:, i], neighbors))
+					# Determine if the node will transition states
+					transition = (cnt_infected_neighbors >= model.thresholds[u, i])
+
+					# If it will transition, add it to the updated set.
+					if transition
+						# Create a copy of the dictionary to update
+						curr_updated = copy(updated[i])
+						# Update the copy
+						curr_updated[u] = 1
+						# Set the entry to the copy
+						updated[i] = curr_updated
 					end
-				end	
+				end
+
 		end
-		for u in keys(updated_1)
-			state = pop!(model.nodeStates, u, 0)
-			state += 1
-			get!(model.nodeStates, u, state)
+		# Update node states
+		for curr_contagion=1:length(updated)
+			# Get the updated set for each contagion
+			curr_updated = updated[curr_contagion]
+			# Set the node to infected if it was newly infected.
+			for u in keys(curr_updated)
+		        model.states[u, curr_contagion] = 1
+		    end
 		end
-		for u in keys(updated_2)
-			state = pop!(model.nodeStates, u, 0)
-			state += 2
-			get!(model.nodeStates, u, state)
-		end
+		# Increment the time
 		model.t += 1
-		return (updated_1, updated_2)
+		return updated
 	end
-							
-							
+
+
 	function getStateSummary(model::MultiDiffusionModel)
-		state_summary = Array{Int}([0, 0, 0, 0])
-		for nodeState in values(model.nodeStates)
-			state_summary[nodeState + 1] += 1
+		"""
+		This takes a DiffusionModel input, and it calculates the number of
+		infections for each contagion.
+		"""
+		state_summary = zeros(size(model.states)[2] + 1)
+		# Get the number of infections per each contagion.
+		for curr_contagion=2:length(state_summary)
+			state_summary[curr_contagion] = sum(model.states[:, curr_contagion - 1])
 		end
-		state_summary[1] = nv(model.network) - sum((state_summary[2], state_summary[3], state_summary[4]))
+
+
+		for u in vertices(model.network)
+			# Count how many contagions u is infected with.
+			total_infected_u = sum(model.states[u,:])
+			# If u is not infected with anything, increment the counter for no infections
+			if total_infected_u == 0
+				state_summary[1]  += 1
+			end
+		end
+
 		return state_summary
 	end
 
 
 
 	function full_run(model::MultiDiffusionModel)
-		updates = Vector{Tuple}()
-		updated = iterate!(model)
-		max_infections = nv(model.network)
-		append!(updates, [updated])
+		"""
+		This runs the model until its state reaches a fixed point.
+		"""
+		# Prepare a vector to store the updated sets in.
+		updates = Vector{}()
+		# Get the maximum number of time steps the network may run for.
+		max_time_steps = nv(model.network)
+		# Create a variable to count the number of iterations
 		iter_count = 0
-		while !(isempty(updated[1]) && isempty(updated[2]) && iter_count < max_infections)
+
+		# Get the first iteration.
+		updated = iterate!(model)
+		# Join the updated the list of updated dictionaries to the overall list
+		append!(updates, [updated])
+		# Increment the iteration count
+		iter_count += 1
+
+		# Compute the number of updated nodes
+		updated_count = sum(map(x->length(x), updated))
+
+		while updated_count > 0 && (iter_count < max_time_steps)
 			updated = iterate!(model)
-			if !(isempty(updated[1]) && isempty(updated[2]))
+
+			updated_count = sum(map(x->length(x), updated))
+			# Add the updates list for this time step if there were any updated nodes.
+			if updated_count > 0
 				append!(updates, [updated])
+				iter_count += 1
+			else
+				model.t -= 1
 			end
-			iter_count += 1
 		end
+		# Return the time history.
 		return updates
 	end
 
