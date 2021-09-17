@@ -138,34 +138,29 @@ module DiffusionModel
 					# Initialize constants
 					transition = false
 					cnt_infected_neighbors = 0
-
 					# Get the list of neighbors
 					neighbors = all_neighbors(model.network, u)
 					# Add the neighbors infected with that contagion
-					cnt_infected_neighbors = sum(getindex(model.states[:, i], neighbors))
+					cnt_infected_neighbors = sum(model.states[neighbors, i])
 					# Determine if the node will transition states
 					transition = (cnt_infected_neighbors >= model.thresholds[u, i])
 
 					# If it will transition, add it to the updated set.
 					if transition
-						# Create a copy of the dictionary to update
-						curr_updated = copy(updated[i])
-						# Update the copy
-						curr_updated[u] = 1
-						# Set the entry to the copy
-						updated[i] = curr_updated
+						# Get the dictionary of updated nodes for the contagion.
+						curr_updated = updated[i]
+						# Update the dictionary.
+						curr_updated[u] = cnt_infected_neighbors
 					end
 				end
 
 		end
 		# Update node states
-		for curr_contagion=1:length(updated)
+		@simd for curr_contagion=1:length(updated)
 			# Get the updated set for each contagion
 			curr_updated = updated[curr_contagion]
 			# Set the node to infected if it was newly infected.
-			for u in keys(curr_updated)
-		        model.states[u, curr_contagion] = 1
-		    end
+			model.states[collect(keys(curr_updated)), curr_contagion] .= 1
 		end
 		# Increment the time
 		model.t += 1
@@ -198,6 +193,15 @@ module DiffusionModel
 	end
 
 
+	function number_updated(updated::Vector)
+		"""
+		Computes the number of nodes updated from the list of updates returned
+		by iterate.
+		"""
+		updated_count = sum(map(x->length(x), updated))
+		return updated_count
+	end
+
 
 	function full_run(model::MultiDiffusionModel)
 		"""
@@ -218,12 +222,12 @@ module DiffusionModel
 		iter_count += 1
 
 		# Compute the number of updated nodes
-		updated_count = sum(map(x->length(x), updated))
+		updated_count = number_updated(updated)
 
 		while updated_count > 0 && (iter_count < max_time_steps)
 			updated = iterate!(model)
-
-			updated_count = sum(map(x->length(x), updated))
+			# Find the number updated.
+			updated_count = number_updated(updated)
 			# Add the updates list for this time step if there were any updated nodes.
 			if updated_count > 0
 				append!(updates, [updated])
