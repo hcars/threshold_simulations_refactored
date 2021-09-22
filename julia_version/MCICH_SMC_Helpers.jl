@@ -1,5 +1,6 @@
-module BlockingHelpers
+module MCICH_SMC_Helpers
     using LightGraphs;
+    using JuMP;
 
 
     function compute_maximum_intersection(neighbors_to_block, requirements, possible_blocking_nodes, num_contagions)
@@ -30,60 +31,7 @@ module BlockingHelpers
     end
 
 
-    function coverage_optimal(model, available_to_block::Array{Int}, to_block::Dict{Int, UInt}, budget::Int, optimizer)
-        """
-        This finds the optimal coverage for a set multi-cover instance.
-        """
-        lp = Model(optimizer)
-        set_time_limit_sec(lp, 6000)
-        number_sets = length(available_to_block)
-        y_j = zeros(UInt, 1, number_sets)
-        set_to_block = Vector{Int}(undef, length(to_block))
-        i = 1
-        for node in keys(to_block)
-            set_to_block[i] = node
-            i += 1
-        end
-        number_to_block = length(set_to_block)
-        x_i = zeros(UInt, 1, number_to_block)
-        @variable(lp, x_i[1:number_to_block])
-        @variable(lp, y_j[1:number_sets])
-        @constraint(lp, sum(y_j) <= budget)
-        for x in x_i
-            set_binary(x)
-        end
-        for y in y_j
-            set_binary(y)
-        end
 
-        for i=1:length(set_to_block)
-            node_to_block = set_to_block[i]
-            neighbors_node = neighbors(model.network, node_to_block)
-            k = Int(1)
-            indices_neighbors = Vector{Int}()
-            for j=1:length(available_to_block)
-                if available_to_block[j] in neighbors_node
-                    append!(indices_neighbors, [j])
-                end
-            end
-            @constraint(lp, number_sets*x_i[i] >= sum(y_j[m] for m in indices_neighbors) - to_block[node_to_block] + 1)
-            @constraint(lp, number_sets*x_i[i] <= sum(y_j[m] for m in indices_neighbors) - to_block[node_to_block] + number_sets)
-        end
-        @objective(lp, Max, sum(x_i))
-        optimize!(lp)
-        if (termination_status(lp) == MOI.TIME_LIMIT) || (termination_status(lp) == MOI.OPTIMAL)
-        blockers = Set{Int}()
-        for (index, y) in enumerate(y_j)
-            if value.(y) == 1
-                union!(blockers, [available_to_block[index]])
-            end
-        end
-        return blockers, number_to_block - objective_value(lp)
-        else
-           println(termination_status(lp))
-           error("The model did not solve or run out of time.")
-        end
-    end
 
 
     function compute_coverage_heuristic(neighbors_to_block::Vector{Dict{Int, Set}}, requirements::Vector{Dict{Int, UInt}}, budget::Int)
@@ -157,7 +105,7 @@ module BlockingHelpers
                     # Get the threshold for the contagion and the node
                     threshold = model.states[neighbor, curr_contagion]
                     # Add the node to the requirements dictionary
-                    requirements[neighbor] =  neighbors_at_infection_time - threshold
+                    requirements[neighbor] =  neighbors_at_infection_time - threshold + 1
                     # Add the neighbor to the list of nodes to block for the current node
                     union!(curr_neighbors_to_block, [neighbor])
                 end
@@ -189,25 +137,6 @@ module BlockingHelpers
         return current_blocking, unblocked
         end
     end
-
-
-    function compute_candidate_blockers_mcich(model, available_to_block, next_time_step_infections, curr_contagion, curr_budget, optimizer)
-        """
-        This computes a set of candidate blockers for the MCICH heuristic at a given
-            time step using the ILP solution.
-        """
-        begin
-
-        # This computes the requirements and the set of neighbors that need to blocked for each blocking node candidate.
-        neighbors_to_block, requirements = compute_requirements_mcich(model, available_to_block, next_time_step_infections, curr_contagion)
-        neighbors_to_block = collect(keys(neighbors_to_block))
-        # Compute the coverage with the greedy heuristic
-        current_blocking, unblocked = coverage_optimal(neighbors_to_block, requirements, curr_budget, optimizer)
-
-        return current_blocking, unblocked
-        end
-    end
-
 
 
 
@@ -270,63 +199,61 @@ module BlockingHelpers
         return candidate_blocker, blocking_point
     end
 
-    function compute_blocking_choice_mcich(model, updates, curr_contagion, curr_budget, curr_seed_nodes, optimizer, min_time, max_time)
+    function compute_requirements_mcich_coop(model, available_to_block, next_time_step_infections)
         """
-        Given the current contagion and the other necessary information, this computes the MCICH blocking choice for the current
-        contagion using the ILP for the set multi-cover problem.
+        Helper function that gets the coverage requirements and the mapping between nodes and their blocking sets for the greedy SMC.
         """
-        begin
-            # Compute the candidate blockers
-            candidate_blocker = Set{Int}()
-            # Initialize the minimum number of nodes left unblocked to infinity.
-            unblocked_min = Inf
-            # Initialize the blocking point to be the min time.
-            blocking_point = min_time
-            # Computes the best blocking set for each time step.
-            for curr_time_step=min_time:max_time
-                # Gets updated list for the current time step
-                curr_time_step_infections = updates[curr_time_step]
-                # Get the updated dictionary for the current contagions
-                curr_contagion_time_step_infections = curr_time_step_infections[curr_contagion]
-                if isempty(curr_contagion_time_step_infections)
-                    break
-                end
-                # Here we are differencing the seed nodes out from the set of
-                # newly infected nodes for th current contagion at this time step.
-                curr_contagion_time_step_infections_nodes = Set(keys(curr_contagion_time_step_infections))
-                available_to_block = setdiff(curr_contagion_time_step_infections_nodes, curr_seed_nodes)
-                # Check if the number of nodes to block is less than the blocking budget for the current contagion
-                if length(available_to_block) <= curr_budget
-                    candidate_blocker = available_to_block
-                    blocking_point = curr_time_step
-                    break
-                end
-                # Get the dictionary of newly infected nodes for the contagion at the next time step.
-                next_time_step_infections = updates[curr_time_step+1][curr_contagion]
-                if isempty(next_time_step_infections)
-                    break
-                end
+        num_contagions = size(model.states)[2]
+        # Initialize the requirements and neighbors to block.
+        requirements = Vector{Dict{Int, UInt}}(undef, num_contagions)
+        neighbors_to_block = Vector{Dict{Int, Set}}(undef, num_contagions)
 
-                # Compute the candidate blocking set and the number of nodes unblocked for the current time step.
-                current_blocking, curr_unblocked = compute_candidate_blockers_mcich(model, available_to_block, next_time_step_infections, curr_contagion, curr_budget, optimizer)
-                current_blocking = current_blocking[1]
 
-                # If the current set has no unblocked nodes, we chose that one as blocking set.
-                if curr_unblocked == 0
-                    candidate_blocker = current_blocking
-                    blocking_point = curr_time_step
-                    break
-                # Otherwise we update the our choice if it improves on prior blocking sets.
-                elseif curr_unblocked < unblocked_min
-                    candidate_blocker = current_blocking
-                    unblocked_min = curr_unblocked
-                    blocking_point  = curr_time_step
+        next_dict = Vector{Dict}(undef, num_contagions)
+        for curr_contagion=1:num_contagions
+            curr_neighbors_to_block = Dict{Int, Set}()
+            curr_requirements = Dict{Int, UInt}()
+            next_dict[curr_contagion] = next_time_step_infections[curr_contagion]
+            for node in available_to_block[curr_contagion]
+                curr_node_to_block = Set{Int}()
+                # Check if the nodes in the next set of infected nodes is in the neighbor of the current set of infected nodes.
+                curr_neighbors = all_neighbors(model.network, node)
+                for neighbor in curr_neighbors
+                    # Get the set of neighbors in the next infected set neigboring a potential blocking node.
+                    # Also, find those neighbors' requirements.
+                    if haskey(next_dict[curr_contagion], neighbor)
+                        interaction_term = 0
+                        total_interaction = 0
+                        for other_contagion=1:num_contagions
+                            if curr_contagion == other_contagion
+                                continue
+                            elseif model.states[neighbor, curr_contagion] == 1
+                                total_interaction += model.interaction_terms[curr_contagion, other_contagion]
+                            end
+                        end
+
+                        # Compute requirements.
+                        infected_neighbors = next_dict[curr_contagion][neighbor]
+                        threshold = model.thresholds[neighbor, curr_contagion]
+                        requirement = infected_neighbors + total_interaction + 1 - threshold
+                        # Add requirements to the current requirements dictionary.
+                        curr_requirements[neighbor] = requirement
+                        union!(curr_node_to_block, [neighbor])
+                    end
                 end
+                curr_neighbors_to_block[node] = curr_node_to_block
             end
-
+            # Add the current dictionaries to the overall ones.
+            requirements[curr_contagion] = curr_requirements
+            neighbors_to_block[curr_contagion] = curr_neighbors_to_block
         end
-        return candidate_blocker, blocking_point
+
+        return neighbors_to_block, requirements
     end
+
+
+
+
 
 
 end

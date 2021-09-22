@@ -1,25 +1,34 @@
 module Blocking
-    using LightGraphs;
-    using JuMP;
+    using LightGraphs
+    using JuMP
     include("./DiffusionModel.jl")
-    include("./Blocking_Helpers.jl")
+    include("./MCICH_SMC_Helpers.jl")
+    include("./MCICH_ILP_Helpers.jl")
+    include("./Optimal_ILP_Helpers.jl")
 
 
-    function high_degree_blocking(model, budgets::Vector{Int}, seed_set::Tuple)::Dict{Int, Set}
+    function high_degree_blocking(model, budgets::Vector{Int}, seed_set::Tuple)::Dict{
+        Int,
+        Set,
+    }
         """
         This method takes in a DiffusionModel, an array of budgets, and the seed sets.
         They return a dictionary of blockers.
         """
         my_degree(x) = degree(model.network, x)
-        high_degree_nodes = sort(vertices(model.network), by=my_degree, rev=true)
-        blockers = Dict{Int, Set}()
-        for curr_contagion=1:size(model.states)[2]
-            # Get the budget and seeds for the current contagion.
+        high_degree_nodes = sort(
+            vertices(model.network),
+            by = my_degree,
+            rev = true,
+        )
+        blockers = Dict{Int,Set}()
+        for curr_contagion = 1:size(model.states)[2]
+                # Get the budget and seeds for the current contagion.
             curr_budget = budgets[curr_contagion]
             curr_seeds = seed_set[curr_contagion]
-            # Set the number of blocking for the current contagion to 0.
+                # Set the number of blocking for the current contagion to 0.
             curr_blocked = 0
-            j=1
+            j = 1
             while curr_blocked < curr_budget
                 curr_selection = high_degree_nodes[j]
                 if curr_selection in keys(blockers)
@@ -40,8 +49,11 @@ module Blocking
 
 
     function random_blocking(model, budgets::Vector{Int}, exclude::Tuple)::Vector{Set{Int}}
+        """
+        This returns a random set of blocking nodes.
+        """
         blockers = Vector{Set{Int}}(undef, length(budgets))
-        for i=1:length(blockers)
+        for i = 1:length(blockers)
             curr_set = Set{Int}()
             curr_budget = budgets[i]
             curr_seeds = exclude[i]
@@ -56,7 +68,14 @@ module Blocking
         return blockers
     end
 
-    function mcich(model, seed_sets::Tuple, updates:: Array, budgets::Vector{Int}, min_time=1, max_time = Nothing)
+    function mcich(
+        model,
+        seed_sets::Tuple,
+        updates::Array,
+        budgets::Vector{Int},
+        min_time = 1,
+        max_time = Nothing,
+    )
         """
         This function takes in a DiffusionModel, model, tuple containing the seed_sets, a set of budgets, the minimum blocking time,
             and the maximum blocking time.
@@ -71,37 +90,54 @@ module Blocking
         - `max_time`: This is the maximum time at which nodes may be chosen.
         ...
         """
-        num_contagions  = size(model.states)[2]
-        # Initialize an object to store the blocking nodes in.
+        num_contagions = size(model.states)[2]
+            # Initialize an object to store the blocking nodes in.
         blockings = Vector{Set}(undef, num_contagions)
-        # Initialize the blocking point to 1 for each contagion.
+            # Initialize the blocking point to 1 for each contagion.
         blocking_points = ones(num_contagions)
-        # Set the maximum time to the set of nodes before the last set of infected nodeStates
-        # if it is not already set.
+            # Set the maximum time to the set of nodes before the last set of infected nodeStates
+            # if it is not already set.
         if max_time == Nothing
             max_time = length(updates) - 1
         end
-            for curr_contagion=1:length(budgets)
-                # Get the current budget
-                curr_budget = budgets[curr_contagion]
-                # Get the current seed nodes
-                curr_seed_nodes = seed_sets[curr_contagion]
+        for curr_contagion = 1:length(budgets)
+                    # Get the current budget
+            curr_budget = budgets[curr_contagion]
+                    # Get the current seed nodes
+            curr_seed_nodes = seed_sets[curr_contagion]
 
-                candidate_blocker, blocking_point = BlockingHelpers.compute_blocking_choice_mcich(model, updates, curr_contagion, curr_budget, curr_seed_nodes, min_time, max_time)
-                # Update the blocking_points and the blocking choices.
-                blocking_points[curr_contagion] = blocking_point
-                blockings[curr_contagion] = candidate_blocker
-
-                if length(blockings) < curr_budget && curr_contagion < length(curr_budgets)
-                    budgets[curr_contagion + 1] += curr_budget - length(blockings)
-                end
+            candidate_blocker, blocking_point = MCICH_SMC_Helpers.compute_blocking_choice_mcich(
+                model,
+                updates,
+                curr_contagion,
+                curr_budget,
+                curr_seed_nodes,
+                min_time,
+                max_time,
+            )
+                    # Update the blocking_points and the blocking choices.
+            blocking_points[curr_contagion] = blocking_point
+            blockings[curr_contagion] = candidate_blocker
+                    # Pass off the excess budget to the other contagion.
+            if length(blockings) < curr_budget &&
+               curr_contagion < length(curr_budgets)
+                budgets[curr_contagion+1] += curr_budget - length(blockings)
+            end
         end
         return blockings, blocking_points
     end
 
 
 
-    function mcich(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int}, optimizer, min_time=1, max_time=Nothing)
+    function mcich_ilp(
+        model,
+        seed_sets::Tuple,
+        updates::Vector,
+        budgets::Vector{Int},
+        optimizer,
+        min_time = 1,
+        max_time = Nothing,
+    )
         """
         This function takes in a DiffusionModel, model, tuple containing the seed_sets, a set of budgets, an optimizer choice, the minimum blocking time,
             and the maximum blocking time.
@@ -117,7 +153,98 @@ module Blocking
         - `max_time`: This is the maximum time at which nodes may be chosen.
         ...
         """
-        num_contagions  = size(model.states)[2]
+        num_contagions = size(model.states)[2]
+            # Initialize an object to store the blocking nodes in.
+        blockings = Vector{Set}(undef, num_contagions)
+            # Initialize the blocking point to 1 for each contagion.
+        blocking_points = ones(num_contagions)
+            # Set the maximum time to the set of nodes before the last set of infected nodeStates
+            # if it is not already set.
+        if max_time == Nothing
+            max_time = length(updates) - 1
+        end
+        for curr_contagion = 1:length(budgets)
+                    # Get the current budget
+            curr_budget = budgets[curr_contagion]
+                    # Get the current seed nodes
+            curr_seed_nodes = seed_sets[curr_contagion]
+            candidate_blocker, blocking_point = MCICH_ILP_Helpers.compute_blocking_choice_mcich_ilp(
+                model,
+                updates,
+                curr_contagion,
+                curr_budget,
+                curr_seed_nodes,
+                optimizer,
+                min_time,
+                max_time,
+            )
+                    # Update the blocking_points and the blocking choices.
+            blocking_points[curr_contagion] = blocking_point
+            blockings[curr_contagion] = candidate_blocker
+                    # Pass off the excess budget to the other contagion.
+            if length(blockings) < curr_budget &&
+               curr_contagion < length(curr_budgets)
+                budgets[curr_contagion+1] += curr_budget - length(blockings)
+            end
+        end
+        return blockings, blocking_points
+    end
+
+
+    function ilp_optimal(
+        model,
+        seed_nodes::Tuple,
+        updates::Vector,
+        budget::Int,
+        optimizer,
+        time_limit = 86400,
+    )
+        """
+        This computes the optimal blocking for the threshold model.
+        """
+
+        net_vertices = collect(Int, vertices(model.network))
+
+            # Construct the ILP.
+        lp = Optimal_ILP_Helpers.optimal_ilp_construction(
+            model,
+            seed_nodes,
+            updates,
+            budget,
+            optimizer,
+            net_vertices,
+        )
+            # Set the time limit.
+        set_time_limit_sec(lp, time_limit)
+            # Find the optimal solution.
+        optimize!(lp)
+
+            # Put the blockers into the desired form.
+        blockers = Optimal_ILP_Helpers.optimal_ilp_solutions(
+            model,
+            lp,
+            net_vertices,
+        )
+
+        return blockers
+
+    end
+    # This mapping will difference out the seed nodes from the possible blocking nodes.
+    remove_seed(possible_blockers, seeds) = setdiff(possible_blockers, seeds)
+
+    function mcich_smc_coop(
+        model,
+        seed_sets::Tuple,
+        updates::Vector,
+        budget::Int,
+        min_time=1,
+        max_time = Nothing,
+    )
+        """
+        This is the interaction contagions version of the MCICH SMC algorithm.
+        """
+
+        num_contagions = size(model.states)[2]
         # Initialize an object to store the blocking nodes in.
         blockings = Vector{Set}(undef, num_contagions)
         # Initialize the blocking point to 1 for each contagion.
@@ -127,157 +254,53 @@ module Blocking
         if max_time == Nothing
             max_time = length(updates) - 1
         end
-            for curr_contagion=1:length(budgets)
-                # Get the current budget
-                curr_budget = budgets[curr_contagion]
-                # Get the current seed nodes
-                curr_seed_nodes = seed_sets[curr_contagion]
+        blocking_point = 1
+        unblocked_min = Inf
+        for j = min_time:max_time
+            # Get the updated nodes for the time step j.
+            curr_time_step_infections = updates[j]
+            find_blockings = Vector{Set}(undef, num_contagions)
+            for curr_contagion=1:num_contagions
+                find_blockings[curr_contagion] = Set(keys(curr_time_step_infections[curr_contagion]))
+            end
+            # Check if all the node sets to choose to block are empty.
+            if reduce(&, map(x->isempty(x), find_blockings))
+                break
+            end
+            # Here we are differencing the seed nodes out from the seed sets.
+            # We use a mapping defined above.
+            available_to_block = map(remove_seed, find_blockings, seed_sets)
 
-                candidate_blocker, blocking_point = BlockingHelpers.compute_blocking_choice_mcich(model, updates, curr_contagion, curr_budget, curr_seed_nodes, optimizer, min_time, max_time)
-                # Update the blocking_points and the blocking choices.
-                blocking_points[curr_contagion] = blocking_point
-                blockings[curr_contagion] = candidate_blocker
 
-                if length(blockings) < curr_budget && curr_contagion < length(curr_budgets)
-                    budgets[curr_contagion + 1] += curr_budget - length(blockings)
-                end
+            # If there are less nodes to block than the budget use available_to_block as the blocking set.
+            if sum(map(x->length(x), available_to_block)) <= budget
+                blockings = available_to_block
+                blocking_point = j
+                break
+            end
+
+            # Get the next of set of nodes infected.
+            next_time_step_infections = updates[j+1]
+            # Compute the necessary inputs to the coverage algorithm.
+            neighbors_to_block, requirements = MCICH_SMC_Helpers.compute_requirements_mcich_coop(model, available_to_block, next_time_step_infections)
+            # See if there are any nodes to block.
+            if reduce(&, map(x->isempty(x), requirements))
+                break
+            end
+            # Compute the blocking with the SMC algorithm.
+            current_blocking, unblocked = MCICH_SMC_Helpers.compute_coverage_heuristic(neighbors_to_block, requirements, budget)
+            if unblocked == 0
+                blockings = current_blocking
+                blocking_point = j
+                break
+            elseif unblocked < unblocked_min
+                blockings = current_blocking
+                unblocked_min = unblocked
+                blocking_point = j
+            end
         end
-        return blockings, blocking_points
+        return blockings, blocking_point
     end
 
-
-
-    # function mcich(model, seed_sets::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budgets::Vector{Int}, optimizer)
-    #     blockings = Vector()
-    #     for i=1:length(budgets)
-    #         budget = budgets[i]
-    #         candidate_blocker = Vector{Int}()
-    #         unblocked_min = Inf
-    #         seed_nodes = seed_sets[i]
-    #         for j=1:(length(updates) - 1)
-    #             find_blocking = updates[j][i]
-    #             if isempty(find_blocking)
-    #                 break
-    #             end
-    #             available_to_block = setdiff(Set{Int}(keys(find_blocking)), seed_nodes)
-    #             if length(available_to_block) <= budget
-    #                 candidate_blocker = available_to_block
-    #                 break
-    #             end
-    #             to_block = Dict{Int, UInt}()
-    #             next_dict = updates[j+1][i]
-    #             for node in available_to_block
-    #                 for neighbor in all_neighbors(model.network, node)
-    #                     if haskey(next_dict, neighbor)
-    #                         requirement = get(next_dict, neighbor, 0) - get(model.thresholdStates, neighbor, model.θ_i[i]) + 1
-    #                         get!(to_block, neighbor, requirement)
-    #                     end
-    #                 end
-    #             end
-    #             if isempty(to_block)
-    #                 break
-    #             end
-    #             array_version = Vector{Int}(undef, length(available_to_block))
-    #             cnt = 1
-    #             for node in available_to_block
-    #                 array_version[cnt] = node
-    #                 cnt += 1
-    #             end
-    #             current_blocking, unblocked = coverage_optimal(model, array_version, to_block, budget, optimizer)
-    #             if unblocked == 0
-    #                 candidate_blocker = current_blocking
-    #                 break
-    #             elseif unblocked < unblocked_min
-    #                 candidate_blocker = current_blocking
-    #                 unblocked_min = unblocked
-    #             end
-    #         end
-    #     append!(blockings, [collect(candidate_blocker)])
-    #     if length(blockings) < budget && i < length(budgets)
-    #         budgets[i+1] += budget - length(blockings)
-    #     end
-    #     end
-    #     return blockings
-    # end
-
-
-
-
-    function ilp_construction(model, seed_nodes::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budget::Int, optimizer, net_vertices)
-        # Optimizer says what solver to use
-        lp = Model(optimizer)
-        # Scrub out seed nodes
-
-
-        num_vertices = length(net_vertices)
-
-        x_vars = zeros(Int, num_vertices, 2)
-        y_vars = zeros(Int, num_vertices, 2)
-        z_vars = zeros(Int, num_vertices, 2)
-        @variable(lp, x_vars[1:num_vertices, 1:2])
-        @variable(lp, y_vars[1:num_vertices, 1:2])
-        @variable(lp, z_vars[1:num_vertices, 1:2])
-
-        for j=1:2
-            for i=1:num_vertices
-                set_binary(x_vars[i,j])
-                set_binary(y_vars[i,j])
-                set_binary(z_vars[i,j])
-            end
-        end
-
-        for i=1:num_vertices
-            node = net_vertices[i]
-
-            if node in seed_nodes[1]
-                @constraint(lp, y_vars[i,1] == 1)
-            end
-            if node in seed_nodes[2]
-                @constraint(lp, y_vars[i,2] == 1)
-            end
-            neighbors_node = neighbors(model.network, node)
-            node_degree = degree(model.network, node)
-            neighbor_indices = Vector{Int}()
-            for neighbor in neighbors_node
-                append!(neighbor_indices, [findfirst(x->x==neighbor,net_vertices)])
-            end
-            for j=1:2
-                @constraint(lp, node_degree*x_vars[i,j] + sum(y_vars[k, j] for k in neighbor_indices) <= node_degree + get(model.thresholdStates, node, model.θ_i[j]) - 1)
-                @constraint(lp, x_vars[i, j] + y_vars[i, j] + z_vars[i, j] == 1)
-            end
-        end
-
-        @constraint(lp, sum(z_vars[i, 1] + z_vars[i, 2] for i=1:num_vertices) <= budget)
-
-        @objective(lp, Min, sum(y_vars[i, 1] + y_vars[i, 2] for i=1:num_vertices) - (length(seed_nodes[1])+ length(seed_nodes[2])) )
-
-        return lp
-    end
-
-    function ilp_optimal(model, seed_nodes::Tuple{Set{Int}, Set{Int}}, updates:: Vector{Tuple}, budget::Int, optimizer)
-
-
-        net_vertices = collect(Int, vertices(model.network))
-
-        lp = ilp_construction(model, seed_nodes, updates, budget, optimizer, net_vertices)
-
-        optimize!(lp)
-
-        z_vars = lp[:z_vars]
-        blockers = Dict{Int, UInt}()
-        for j=1:2
-            for i=1:length(net_vertices)
-                if value.(z_vars[i, j]) == 1
-                    state = get(blockers, net_vertices[i], 0)
-                    state += j
-                    delete!(blockers, net_vertices[i])
-                    get!(blockers, net_vertices[i], state)
-                end
-            end
-        end
-
-        return blockers
-
-    end
 
 end

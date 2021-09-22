@@ -1,6 +1,6 @@
 include("../DiffusionModel.jl")
 include("../Blocking.jl")
-include("../Blocking_Helpers.jl")
+include("../MCICH_SMC_Helpers.jl")
 include("../SeedSelection.jl")
 using LightGraphs;
 using Random;
@@ -17,7 +17,8 @@ using GraphIO;
     node_states[1, 1] = 1
     blocked = Dict{Int, Set}()
     thresholds = fill(UInt(1), (nv(my_graph_1), num_contagions))
-    model = DiffusionModel.MultiDiffusionModel(my_graph_1, node_states, thresholds, blocked,  UInt32(0))
+    interactions = zeros(UInt, num_contagions, num_contagions)
+    model = DiffusionModel.MultiDiffusionModel(my_graph_1, node_states, thresholds, blocked, interactions, UInt32(0))
     DiffusionModel.iterate!(model)
     summary = DiffusionModel.getStateSummary(model)
     @test summary[2] == 2
@@ -37,7 +38,8 @@ end
     node_states[1, 1] = 1
     blocked = Dict{Int, Set}()
     thresholds = fill(UInt(2), (nv(my_graph_1), num_contagions))
-    model = DiffusionModel.MultiDiffusionModel(my_graph_1, node_states, thresholds, blocked,  UInt32(0))
+    interactions = zeros(UInt, num_contagions, num_contagions)
+    model = DiffusionModel.MultiDiffusionModel(my_graph_1, node_states, thresholds, blocked, interactions, UInt32(0))
     DiffusionModel.iterate!(model)
     summary = DiffusionModel.getStateSummary(model)
     @test summary[2] == 1
@@ -56,7 +58,8 @@ end
     node_states[5, 1] = 1
     blocked = Dict{Int, Set}()
     thresholds = fill(UInt(2), (nv(my_graph_1), num_contagions))
-    model = DiffusionModel.MultiDiffusionModel(my_graph_1, node_states, thresholds, blocked,  UInt32(0))
+    interactions = zeros(UInt, num_contagions, num_contagions)
+    model = DiffusionModel.MultiDiffusionModel(my_graph_1, node_states, thresholds, blocked, interactions, UInt32(0))
     DiffusionModel.iterate!(model)
     DiffusionModel.full_run(model)
     summary = DiffusionModel.getStateSummary(model)
@@ -78,7 +81,8 @@ end
     delete!(blocked, 3)
     get!(blocked, 3, blocked_set)
     thresholds = fill(UInt(1), (nv(my_graph_1), num_contagions))
-    model = DiffusionModel.MultiDiffusionModel(my_graph_1, node_states, thresholds, blocked,  UInt32(0))
+    interactions = zeros(UInt, num_contagions, num_contagions)
+    model = DiffusionModel.MultiDiffusionModel(my_graph_1, node_states, thresholds, blocked, interactions, UInt32(0))
     DiffusionModel.full_run(model)
     summary = DiffusionModel.getStateSummary(model)
     @test summary[2] == 2
@@ -98,7 +102,8 @@ end
     node_states[6, 1] = 1
     blocked = Dict{Int, Set}()
     thresholds = fill(UInt(1), (nv(my_graph_1), num_contagions))
-    model = DiffusionModel.MultiDiffusionModel(my_graph_1, node_states, thresholds, blocked,  UInt32(0))
+    interactions = zeros(UInt, num_contagions, num_contagions)
+    model = DiffusionModel.MultiDiffusionModel(my_graph_1, node_states, thresholds, blocked, interactions,  UInt32(0))
     full_run_1 = DiffusionModel.full_run(model)
 
     @testset "High Degree Heuristic Test" begin
@@ -109,6 +114,10 @@ end
 
     @testset "MCICH SMC Heuristic Test 1" begin
         blocker = Blocking.mcich(model, (Set{Int}(), Set{Int}()), full_run_1, [1, 2])[1]
+        @test blocker[1] == Set([3])
+        @test blocker[2] == Set()
+
+        blocker = Blocking.mcich(model, (Set{Int}(), Set{Int}()), full_run_1, [1, 2], 2)[1]
         @test blocker[1] == Set([4])
         @test blocker[2] == Set()
     end
@@ -124,17 +133,16 @@ end
         @test blocker[1] == Set([4])
         @test blocker[2] == Set()
     end
-    #
-    # @testset "MCICH Test Optimal ILP"  begin
-    #     seeds = (Set{Int}([1, 6]), Set{Int}())
-    #     blocker = Blocking.ilp_optimal(model, seeds, full_run_1, 1, GLPK.Optimizer)
-    #     @test 3 ∈ keys(blocker)
-    #     @test blocker[3] == 1
-    #     blocker = Blocking.ilp_optimal(model, seeds, full_run_1, 2, GLPK.Optimizer)
-    #     @test blocker == Dict(3=>1, 2=>1)
-    #     blocker = Blocking.ilp_optimal(model, seeds, full_run_1, 3, GLPK.Optimizer)
-    #     @test blocker == Dict(3=>1, 2=>1)
-    # end
+
+    @testset "MCICH Test Optimal ILP"  begin
+        seeds = (Set{Int}([1, 6]), Set{Int}())
+        blocker = Blocking.ilp_optimal(model, seeds, full_run_1, 1, GLPK.Optimizer)
+        @test blocker[1] == Set([3])
+        blocker = Blocking.ilp_optimal(model, seeds, full_run_1, 2, GLPK.Optimizer)
+        @test blocker[1] == Set([2, 3])
+        blocker = Blocking.ilp_optimal(model, seeds, full_run_1, 3, GLPK.Optimizer)
+        @test blocker[1] == Set([2, 3])
+    end
 end
 
 
@@ -143,7 +151,7 @@ end
         neighbors_to_block = [Dict{Int, Set}(1=>Set([1,2,3]), 2=>Set([2,3]), 3=>Set([4]))]
         requirements = [Dict{Int, UInt}(1=>UInt(1), 2=>UInt(2), 3=>UInt(2), 4=>UInt(2))]
         budget = 2
-        best_blocking, unblocked = BlockingHelpers.compute_coverage_heuristic(neighbors_to_block, requirements, budget)
+        best_blocking, unblocked = MCICH_SMC_Helpers.compute_coverage_heuristic(neighbors_to_block, requirements, budget)
         @test best_blocking == [Set{Int}([1,2])]
         @test unblocked == 1
     end
@@ -152,7 +160,7 @@ end
         neighbors_to_block = [Dict{Int, Set}(1=>Set([1,2,3]), 2=>Set([2,3]), 3=>Set([4])), Dict{Int, Set}(1=>Set([1,2,3,4]), 2=>Set([2,3]), 3=>Set([4]))]
         requirements = [Dict{Int, UInt}(1=>UInt(1), 2=>UInt(2), 3=>UInt(2), 4=>UInt(2)), Dict{Int, UInt}(1=>UInt(1), 2=>UInt(2), 3=>UInt(2), 4=>UInt(2))]
         budget = 2
-        best_blocking, unblocked = BlockingHelpers.compute_coverage_heuristic(neighbors_to_block, requirements, budget)
+        best_blocking, unblocked = MCICH_SMC_Helpers.compute_coverage_heuristic(neighbors_to_block, requirements, budget)
         @test best_blocking == [Set{Int}([1]), Set{Int}([1])]
         @test unblocked == 6
     end
@@ -161,7 +169,7 @@ end
         neighbors_to_block = [Dict{Int, Set}(1=>Set([1,2,3]), 2=>Set([2,3]), 3=>Set([4])), Dict{Int, Set}(1=>Set([1,2,3,4]), 2=>Set([2,3]), 3=>Set([4]))]
         requirements = [Dict{Int, UInt}(1=>UInt(1), 2=>UInt(2), 3=>UInt(2), 4=>UInt(2)), Dict{Int, UInt}(1=>UInt(1), 2=>UInt(2), 3=>UInt(2), 4=>UInt(2))]
         budget = 4
-        best_blocking, unblocked = BlockingHelpers.compute_coverage_heuristic(neighbors_to_block, requirements, budget)
+        best_blocking, unblocked = MCICH_SMC_Helpers.compute_coverage_heuristic(neighbors_to_block, requirements, budget)
         @test best_blocking == [Set{Int}([1, 2]), Set{Int}([1, 2])]
         @test unblocked == 2
     end
@@ -218,6 +226,43 @@ end
         end
     end
 
+    model_other = DiffusionModel.MultiDiffusionModelConstructor(my_graph_2, 2)
+    node_states_2 = zeros(8, 2)
+    node_states_2[2, 1] = 1
+    node_states_2[4, 1] = 1
+    node_states_2[5, 2] = 1
+    node_states_2[7, 2] = 1
+    model_other.states = node_states_2
+    interactions = zeros(UInt, 2, 2)
+    interactions[2, 1] = 1
+    model_other.interaction_terms = interactions
+    @testset "Iteration Tests 2" begin
+        node_states_copy = copy(node_states_2)
+        iteration_1 = DiffusionModel.iterate!(model_other)
+        node_states_copy[1, 1] = 1
+        node_states_copy[3, 1] = 1
+        node_states_copy[6, 2] = 1
+        node_states_copy[8, 2] = 1
+
+        for i=1:size(node_states_copy)[1]
+            for j=1:size(node_states_copy)[2]
+
+                @test model_other.states[i,j] == node_states_copy[i,j]
+            end
+        end
+
+        iteration_2 = DiffusionModel.iterate!(model_other)
+        node_states_copy[3, 2] = 1
+        node_states_copy[5, 2] = 1
+
+
+        for i=1:size(node_states_copy)[1]
+            for j=1:size(node_states_copy)[2]
+                @test model_other.states[i,j] == node_states_copy[i,j]
+            end
+        end
+    end
+
     node_states_2 = zeros(UInt, 8, 2)
     node_states_2[2, 1] = 1
     node_states_2[4, 1] = 1
@@ -247,109 +292,119 @@ end
 
     end
 
-    # @testset "MCICH ILP Test" begin
-    #     # Run and find optimal
-    #     blocker = Blocking.mcich_optimal(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, [0, 1], GLPK.Optimizer)
-    #     @test blocker[2] == [6]
-    # end
-    #
-    # @testset "ILP Optimal Test" begin
-    #     blocker = Blocking.ilp_optimal(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, 1, GLPK.Optimizer)
-    #     @test blocker == Dict(6=>2)
-    #     blocker = Blocking.ilp_optimal(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, 2, GLPK.Optimizer)
-    #     @test blocker == Dict(6=>2, 8=>2)
-    #     blocker = Blocking.ilp_optimal(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, 8, GLPK.Optimizer)
-    #     @test blocker == Dict(6=>2, 8=>2, 3=>1, 1=>1)
-    # end
+    @testset "MCICH ILP Test" begin
+        model_other = DiffusionModel.MultiDiffusionModelConstructor(my_graph_2, 2)
+        model_other.states = node_states_2
+        full_run_2 = DiffusionModel.full_run(model_other)
+        # Run and find optimal
+        blocker = Blocking.mcich_ilp(model_other, (Set{Int}(), Set{Int}([2, 4, 5, 7])), full_run_2, [0, 1], GLPK.Optimizer)[1]
+        @test blocker[2] == Set([6])
+    end
+
+    @testset "ILP Optimal Test" begin
+        blocker = Blocking.ilp_optimal(model_other, (Set{Int}([2, 4]), Set{Int}([5, 7])), full_run_2, 1, GLPK.Optimizer)
+        @test blocker[2] == Set([6])
+        blocker = Blocking.ilp_optimal(model_other, (Set{Int}([2, 4]), Set{Int}([5, 7])), full_run_2, 2, GLPK.Optimizer)
+        @test blocker[2] == Set([6, 8])
+        blocker = Blocking.ilp_optimal(model_other, (Set{Int}([2, 4]), Set{Int}([5, 7])), full_run_2, 8, GLPK.Optimizer)
+        @test blocker[1] == Set([1, 3])
+        @test blocker[2] == Set([6, 8])
+
+    end
 end
-#
-#
-# @testset "Blocking Test: Binary Tree Graph" begin
-#     graph_3 = binary_tree(4)
-#     node_states_3 = Dict(1 => 3)
-#     blockedDict_3 = Dict{Int,UInt}()
-#     thresholdStates_3 = Dict{Int,UInt32}()
-#
-#     model_3 = DiffusionModel.MultiDiffusionModel(graph_3, node_states_3, thresholdStates_3, blockedDict_3, [UInt32(1), UInt32(1)], UInt32(0))
-#     full_run_3 = DiffusionModel.full_run(model_3)
-#     states_3_no_block = DiffusionModel.getStateSummary(model_3)
-#
-#     @testset "MCICH SMC Heuristic" begin
-#         blocker = Blocking.mcich(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, [1, 1])[1]
-#         @test blocker[1] == [2] || blocker[1] == [3]
-#         @test blocker[2] == [2] || blocker[2] == [3]
-#         DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
-#         DiffusionModel.set_blocking!(model_3,  blocker)
-#         full_run_3 = DiffusionModel.full_run(model_3)
-#         states_3 = DiffusionModel.getStateSummary(model_3)
-#         @test sum(states_3[2:3]) + 2*states_3[4] == sum(states_3_no_block[2:3]) + 2*states_3_no_block[4] - 14
-#     end
-#
-#
-#     @testset "MCICH ILP" begin
-#         blocker = Blocking.mcich_optimal(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, [1, 1], GLPK.Optimizer)
-#         @test blocker[1] == [2] || blocker[1] == [3]
-#         @test blocker[2] == [2] || blocker[2] == [3]
-#         DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
-#         DiffusionModel.set_blocking!(model_3,  blocker)
-#         DiffusionModel.full_run(model_3)
-#         states_3 = DiffusionModel.getStateSummary(model_3)
-#         @test sum(states_3[2:3]) + 2*states_3[4] == sum(states_3_no_block[2:3]) + 2*states_3_no_block[4] - 14
-#     end
-#
-#
-#     @testset "ILP Optimal Test" begin
-#         DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
-#         full_run_3 = DiffusionModel.full_run(model_3)
-#         blocker = Blocking.ilp_optimal(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, 4, GLPK.Optimizer)
-#         @test blocker == Dict(2=>3, 3=>3)
-#         blocker = Blocking.ilp_optimal(model_3,  (Set{Int}([1]), Set{Int}([1])), full_run_3, 1, GLPK.Optimizer)
-#         @test 3 ∈ keys(blocker) || 2 ∈ keys(blocker)
-#         @test length(blocker) == 1
-#     end
-#
-#
-# end
-#
-# @testset "Blocking Test: Star Graph" begin
-#     graph_4 = star_graph(5)
-#     node_states_4 = Dict(2 => 3)
-#     blockedDict_4 = Dict{Int,UInt}()
-#     thresholdStates_4 = Dict{Int,UInt32}()
-#
-#     model_4 = DiffusionModel.MultiDiffusionModel(graph_4, node_states_4, thresholdStates_4, blockedDict_4, [UInt32(1), UInt32(1)], UInt32(0))
-#     full_run_4 = DiffusionModel.full_run(model_4)
-#
-#     @testset "MCICH SMC Heuristic" begin
-#         blocker = Blocking.mcich(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 1])[1]
-#         @test blocker[1] == [1]
-#         @test blocker[2] == [1]
-#         blocker = Blocking.mcich(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 0])[1]
-#         @test blocker[1] == [1]
-#         @test isempty(blocker[2])
-#     end
-#
-#
-#     @testset "MCICH ILP" begin
-#         blocker = Blocking.mcich_optimal(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 1], GLPK.Optimizer)
-#         @test blocker[1] == [1]
-#         @test blocker[2] == [1]
-#         blocker = Blocking.mcich_optimal(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 0], GLPK.Optimizer)
-#         @test blocker[1] == [1]
-#         @test isempty(blocker[2])
-#     end
-#
-#     @testset "ILP Optimal Test" begin
-#         blocker = Blocking.ilp_optimal(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, 1, GLPK.Optimizer)
-#         @test 1 ∈ keys(blocker)
-#         blocker = Blocking.ilp_optimal(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, 2, GLPK.Optimizer)
-#         @test blocker == Dict(1=>3)
-#         blocker = Blocking.ilp_optimal(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, 4, GLPK.Optimizer)
-#         @test blocker == Dict(1=>3)
-#     end
-#
-# end
-#
+
+
+@testset "Blocking Test: Binary Tree Graph" begin
+    my_graph_3 = binary_tree(4)
+    node_states_3 = zeros((nv(my_graph_3),2))
+    node_states_3[1, :] .= 1
+
+    model_3 = DiffusionModel.MultiDiffusionModelConstructor(my_graph_3, 2, [UInt(1), UInt(1)])
+    model_3.states = node_states_3
+    full_run_3 = DiffusionModel.full_run(model_3)
+    states_3_no_block = DiffusionModel.getStateSummary(model_3)
+
+    @testset "MCICH SMC Heuristic" begin
+        blocker = Blocking.mcich(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, [1, 1])[1]
+        @test blocker[1] == Set([2]) || blocker[1] == Set([3])
+        @test blocker[2] == Set([2]) || blocker[2] == Set([3])
+        DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
+        DiffusionModel.set_blocking!(model_3,  blocker)
+        full_run_3 = DiffusionModel.full_run(model_3)
+        states_3 = DiffusionModel.getStateSummary(model_3)
+        @test sum(states_3[2:3]) == sum(states_3_no_block[2:3]) - 14
+    end
+
+
+    @testset "MCICH ILP" begin
+        blocker = Blocking.mcich_ilp(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, [1, 1], GLPK.Optimizer)[1]
+        @test blocker[1] == Set([2]) || blocker[1] == Set([3])
+        @test blocker[2] == Set([2]) || blocker[2] == Set([3])
+        # DiffusionModel.set_initial_conditions!(model_3, (Set{Int}([1]), Set{Int}([1])))
+        # DiffusionModel.set_blocking!(model_3,  blocker)
+        # DiffusionModel.full_run(model_3)
+        # states_3 = DiffusionModel.getStateSummary(model_3)
+        # @test sum(states_3[2:3]) + 2*states_3[4] == sum(states_3_no_block[2:3]) + 2*states_3_no_block[4] - 14
+    end
+
+
+    @testset "ILP Optimal Test" begin
+        blocker = Blocking.ilp_optimal(model_3, (Set{Int}([1]), Set{Int}([1])), full_run_3, 4, GLPK.Optimizer)
+        @test blocker[1] == Set([2, 3]) && blocker[2] == Set([2, 3])
+    end
+
+
+end
+
+@testset "Blocking Test: Star Graph" begin
+    my_graph_4 = star_graph(5)
+    node_states_4 = zeros(UInt, 5, 2)
+    node_states_4[2, :] .= 1
+
+
+    model_4 = DiffusionModel.MultiDiffusionModelConstructor(my_graph_4, 2, [UInt(1), UInt(1)])
+    model_4.states = node_states_4
+    full_run_4 = DiffusionModel.full_run(model_4)
+
+    @testset "MCICH SMC Heuristic" begin
+        blocker = Blocking.mcich(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 1])[1]
+        @test blocker[1] == Set([1])
+        @test blocker[2] == Set([1])
+        blocker = Blocking.mcich(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 0])[1]
+        @test blocker[1] == Set([1])
+        @test isempty(blocker[2])
+    end
+
+    @testset "MCICH SMC Coop Heuristic" begin
+        blocker = Blocking.mcich_smc_coop(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, 2)[1]
+        @test  blocker[1] == Set([1]) && blocker[2] == Set([1])
+        blocker = Blocking.mcich_smc_coop(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, 1)[1]
+        @test (blocker[1] == Set([1]) && blocker[2] == Set()) || (blocker[1] == Set() && blocker[2] == Set([1]))
+    end
+
+
+    @testset "MCICH ILP" begin
+        blocker = Blocking.mcich_ilp(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 1], GLPK.Optimizer)[1]
+        @test blocker[1] == Set([1])
+        @test blocker[2] == Set([1])
+        blocker = Blocking.mcich_ilp(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, [1, 0], GLPK.Optimizer)[1]
+        @test blocker[1] == Set([1])
+        @test isempty(blocker[2])
+    end
+
+    @testset "ILP Optimal Test" begin
+        blocker = Blocking.ilp_optimal(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, 1, GLPK.Optimizer)
+        @test (blocker[1] == Set([1]) && blocker[2] == Set([])) || (blocker[1] == Set([]) && blocker[2] == Set([1]))
+        blocker = Blocking.ilp_optimal(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, 2, GLPK.Optimizer)
+        @test blocker[1] == Set([1])
+        @test blocker[2] == Set([1])
+        blocker = Blocking.ilp_optimal(model_4, (Set{Int}([2]), Set{Int}([2])), full_run_4, 4, GLPK.Optimizer)
+        @test blocker[1] == Set([1])
+        @test blocker[2] == Set([1])
+    end
+
+end
+
 @testset "Hand Drawn Graph 1" begin
     graph_5 = SimpleGraph()
     add_vertices!(graph_5, 10)
@@ -386,16 +441,16 @@ end
     end
 
 
-    # @testset "Optimal test on graph 5" begin
-    #     blocker = Blocking.ilp_optimal(model_5, (Set{Int}([0,1,8,9]), Set{Int}()), full_run_5, 1, GLPK.Optimizer)
-    #     @test blocker == Dict(2=>1)
-    # end
-    #
-    #
-    # @testset "MCICH SMC test on graph 5" begin
-    #     blocker = Blocking.mcich(model_5, (Set{Int}([0,1,8,9]), Set{Int}()), full_run_5, [1, 0])[1]
-    #     @test blocker[1] == [2]
-    # end
+    @testset "Optimal test on graph 5" begin
+        blocker = Blocking.ilp_optimal(model_5, (Set{Int}([1,2,9,10]), Set{Int}()), full_run_5, 1, GLPK.Optimizer)
+        @test blocker[1] == Set([3])
+    end
+
+
+    @testset "MCICH SMC test on graph 5" begin
+        blocker = Blocking.mcich(model_5, (Set{Int}([1,2,9,10]), Set{Int}()), full_run_5, [1, 0])[1]
+        @test blocker[1] == Set([3])
+    end
 end
 #
 # @testset "Ascending Budget" begin

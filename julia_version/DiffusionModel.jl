@@ -16,6 +16,7 @@ module DiffusionModel
 		states::Matrix{UInt}
 		thresholds::Matrix{UInt}
 		blocked::Dict{Int, Set}
+		interaction_terms::Matrix{UInt}
 		t::UInt32
 	end
 
@@ -28,7 +29,8 @@ module DiffusionModel
 		states = zeros(UInt, (nv(graph), num_contagions))
 		thresholds = fill(UInt(2), (nv(graph), num_contagions))
 		blocked = Dict{Int, Set}()
-		return MultiDiffusionModel(graph, states, thresholds, blocked, UInt(0))
+		interaction_terms = zeros(UInt, num_contagions, num_contagions)
+		return MultiDiffusionModel(graph, states, thresholds, blocked, interaction_terms, UInt(0))
 	end
 
 	function MultiDiffusionModelConstructor(graph, num_contagions::Number, uniform_thresholds::Vector{UInt})
@@ -39,12 +41,13 @@ module DiffusionModel
 		"""
 		states = zeros(UInt, (nv(graph), num_contagions))
 		thresholds = Matrix{UInt}(undef, nv(graph), num_contagions)
-		for i=1:length(uniform_thresholds)
-			curr_threshold = uniform_thresholds[i]
-			thresholds[:, i] = fill(curr_threshold, num_contagions)
+		for curr_contagion=1:length(uniform_thresholds)
+			curr_threshold = uniform_thresholds[curr_contagion]
+			thresholds[:, curr_contagion] = fill(curr_threshold, nv(graph))
 		end
 		blocked = Dict{Int, Set}()
-		return MultiDiffusionModel(graph, states, thresholds, blocked, UInt(0))
+		interaction_terms = zeros(UInt, num_contagions, num_contagions)
+		return MultiDiffusionModel(graph, states, thresholds, blocked, interaction_terms, UInt(0))
 	end
 
 	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Set{Int}, num_contagions::UInt)
@@ -52,7 +55,7 @@ module DiffusionModel
 		This function resets the model to its initial conditions; all contagions are set to zero and the blocking nodes are removed.
 		The input set of seed nodes is chosen to be infected with each contagion with 1/2 probability.
 		"""
-		states = zeros(UInt, (nv(graph), num_contagions))
+		states = zeros(UInt, (nv(model.network), num_contagions))
 		model.blocked =  Dict{Int, Set}()
 		for seed in seeds
 			# Do a coin flip to determine if a node is infected with a contagion.
@@ -69,19 +72,19 @@ module DiffusionModel
 	end
 
 
-	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Vector{Set})
+	function set_initial_conditions!(model::MultiDiffusionModel, seeds::Tuple)
 		"""
 		This function resets the model to its initial conditions; all contagions are set to zero and the blocking nodes are removed
 		The seeds input will assumes there is a list of seed of nodes for each contagion.
 		i.e. at index 1 there is a set of seed nodes for contagion 1. At index 4, for contagion 4
 		, etc
 		"""
-		states = zeros(UInt, (nv(graph), num_contagions))
+		states = zeros(UInt, (nv(model.network), length(seeds)))
 		model.blocked =  Dict{Int, Set}()
-		for i=1:length(seeds)
-			curr_seed_set
+		for curr_contagion=1:length(seeds)
+			curr_seed_set = seeds[curr_contagion]
 			for seed in curr_seed_set
-				states[seed, i] = 1
+				states[seed, curr_contagion] = 1
 			end
 		end
 		model.t = UInt32(0)
@@ -123,16 +126,17 @@ module DiffusionModel
 		# We create the list with this instead of fill because fill will create references
 		# to the same dictionary.
 		updated = Vector{Dict{Int, UInt32}}(undef, size(model.states)[2])
-		for curr_contagion=1:size(model.states)[2]
+		num_contagions = size(model.states)[2]
+		for curr_contagion=1:num_contagions
 			updated[curr_contagion] = Dict{Int, UInt32}()
 		end
 		# Iterate through each vertex
 		for u in vertices(model.network)
 				# Get what contagions it's blocked for
 				blocked_for = get(model.blocked, u, Set{}())
-				@inbounds for i=1:size(model.states)[2]
+				@inbounds for curr_contagion=1:num_contagions
 					# Check to ensure that it is not blocked for that contagion and the node is not already infected for the contagion.
-					if (i in blocked_for) || (model.states[u, i] == 1)
+					if (curr_contagion in blocked_for) || (model.states[u, curr_contagion] == 1)
 						continue
 					end
 					# Initialize constants
@@ -141,14 +145,22 @@ module DiffusionModel
 					# Get the list of neighbors
 					neighbors = all_neighbors(model.network, u)
 					# Add the neighbors infected with that contagion
-					cnt_infected_neighbors = sum(model.states[neighbors, i])
+					cnt_infected_neighbors = sum(model.states[neighbors, curr_contagion])
+					effective_threshold =  model.thresholds[u, curr_contagion]
+					for other_contagion=1:num_contagions
+						if other_contagion == curr_contagion
+							continue
+						elseif model.states[u, other_contagion] == 1
+							effective_threshold -= model.interaction_terms[curr_contagion, other_contagion]
+						end
+					end
 					# Determine if the node will transition states
-					transition = (cnt_infected_neighbors >= model.thresholds[u, i])
+					transition = (cnt_infected_neighbors >= effective_threshold)
 
 					# If it will transition, add it to the updated set.
 					if transition
 						# Get the dictionary of updated nodes for the contagion.
-						curr_updated = updated[i]
+						curr_updated = updated[curr_contagion]
 						# Update the dictionary.
 						curr_updated[u] = cnt_infected_neighbors
 					end
